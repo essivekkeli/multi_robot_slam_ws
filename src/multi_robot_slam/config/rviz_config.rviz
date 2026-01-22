@@ -1,0 +1,56 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+  - Class: rviz_common/Views
+    Name: Views
+
+Visualization Manager:
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Name: Grid
+      
+    - Class: rviz_default_plugins/Map
+      Name: Robot1_Map
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /robot1/map
+      Color Scheme: map
+      
+    - Class: rviz_default_plugins/Map
+      Name: Robot2_Map
+      Topic:
+        Value: /robot2/map
+      Color Scheme: costmap
+      
+    - Class: rviz_default_plugins/Map
+      Name: Robot3_Map
+      Topic:
+        Value: /robot3/map
+      Color Scheme: raw
+      
+    - Class: rviz_default_plugins/Map
+      Name: Global_Map
+      Topic:
+        Value: /global_map
+      Color Scheme: map
+      
+    - Class: rviz_default_plugins/LaserScan
+      Name: Robot1_Scan
+      Topic:
+        Value: /robot1/scan
+      
+    - Class: rviz_default_plugins/LaserScan
+      Name: Robot2_Scan
+      Topic:
+        Value: /robot2/scan
+      
+    - Class: rviz_default_plugins/LaserScan
+      Name: Robot3_Scan
+      Topic:
+        Value: /robot3/scan
+      
+  Global Options:
+    Fixed Frame: map

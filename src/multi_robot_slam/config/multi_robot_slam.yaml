@@ -1,0 +1,42 @@
+# multi_robot_params.yaml
+multi_robot_slam:
+  ros__parameters:
+    # System architecture
+    architecture: "centralized"
+    num_robots: 3
+    
+    # Server configuration
+    server:
+      map_merge_frequency: 1.0
+      optimization_frequency: 0.5
+      loop_closure_check_frequency: 2.0
+      
+    # Robot namespaces
+    robot_namespaces: ["robot1", "robot2", "robot3"]
+    
+    # Communication
+    communication:
+      use_compression: true
+      keyframe_distance_threshold: 1.0
+      keyframe_angle_threshold: 0.5
+      max_publish_frequency: 5.0
+      
+    # Loop closure
+    loop_closure:
+      enabled: true
+      min_score: 0.7
+      inter_robot_enabled: true
+      intra_robot_enabled: true
+      search_radius: 5.0
+      
+    # Map merging
+    map_merge:
+      enabled: true
+      min_overlap: 0.3
+      alignment_method: "icp"
+      
+    # Initial poses (x, y, theta)
+    initial_poses:
+      robot1: [0.0, 0.0, 0.0]
+      robot2: [3.0, 0.0, 0.0]
+      robot3: [0.0, 3.0, 1.57]
