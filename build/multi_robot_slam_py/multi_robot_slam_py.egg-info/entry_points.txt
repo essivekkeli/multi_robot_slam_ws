@@ -1,0 +1,2 @@
+[console_scripts]
+central_server = multi_robot_slam_py.central_server:main

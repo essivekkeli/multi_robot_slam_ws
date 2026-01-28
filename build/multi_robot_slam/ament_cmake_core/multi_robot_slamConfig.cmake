@@ -16,7 +16,7 @@ set(_multi_robot_slam_CONFIG_INCLUDED TRUE)
 
 # output package information
 if(NOT multi_robot_slam_FIND_QUIETLY)
-  message(STATUS "Found multi_robot_slam: 0.0.0 (${multi_robot_slam_DIR})")
+  message(STATUS "Found multi_robot_slam: 0.0.1 (${multi_robot_slam_DIR})")
 endif()
 
 # warn when using a deprecated package

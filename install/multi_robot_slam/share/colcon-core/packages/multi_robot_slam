@@ -1,1 +1,1 @@
-geometry_msgs:nav_msgs:rclcpp:sensor_msgs:std_msgs:tf2:tf2_ros
+geometry_msgs:nav2_map_server:nav_msgs:rclcpp:robot_state_publisher:ros_gz_bridge:ros_gz_sim:sensor_msgs:slam_toolbox:std_msgs:tf2:tf2_ros:xacro

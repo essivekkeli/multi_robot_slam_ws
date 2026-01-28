@@ -16,7 +16,7 @@ def generate_launch_description():
     world_file = os.path.join(pkg_multi_robot, 'worlds', 'multi_robot_world.sdf')
     
     # URDF file
-    urdf_file = os.path.join(pkg_multi_robot, 'urdf', 'simple_robot.urdf.xacro')
+    urdf_file = os.path.join(pkg_multi_robot, 'urdf', 'robot.urdf.xacro')
     
     # Robot configurations
     robots_config = [
