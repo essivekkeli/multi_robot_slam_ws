@@ -1,0 +1,5 @@
+central_server:
+  ros__parameters:
+    num_robots: 3
+    robot_namespaces: ['robot1', 'robot2', 'robot3']
+    map_merge_frequency: 1.0

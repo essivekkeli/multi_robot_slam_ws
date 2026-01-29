@@ -46,6 +46,7 @@
 -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//launch/gz_multi_robot.launch.py
 -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//launch/multi_robot_slam.launch.py
 -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//launch/single_robot_slam.launch.py
+-- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//config/multi_robot_params.yaml
 -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//config/multi_robot_slam.yaml
 -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//config/rviz_config.rviz
 -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//config/slam_params.yaml

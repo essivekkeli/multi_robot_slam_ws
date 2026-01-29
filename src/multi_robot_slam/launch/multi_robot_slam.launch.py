@@ -27,25 +27,33 @@ def generate_launch_description():
     
     # Create SLAM nodes for each robot
     slam_nodes = []
-    for robot_name in robot_names:
+    for name in robot_names:  # Changed from robot_name to name
+        # Create frame names immediately as strings
+        odom_frame = name + '/odom'
+        map_frame = name + '/map'
+        base_frame = name + '/base_footprint'
+        scan_topic = '/' + name + '/scan'
+        map_topic = '/' + name + '/map'
+        odom_topic = '/' + name + '/odom'
+        
         slam_node = Node(
             package='slam_toolbox',
             executable='async_slam_toolbox_node',
             name='slam_toolbox',
-            namespace=robot_name,
+            namespace=name,
             parameters=[
                 slam_params_file,
                 {
                     'use_sim_time': use_sim_time,
-                    'odom_frame': f'{robot_name}/odom',
-                    'map_frame': f'{robot_name}/map',
-                    'base_frame': f'{robot_name}/base_footprint',
+                    'odom_frame': odom_frame,
+                    'map_frame': map_frame,
+                    'base_frame': base_frame,
                 }
             ],
             remappings=[
-                ('scan', f'/{robot_name}/scan'),
-                ('map', f'/{robot_name}/map'),
-                ('odom', f'/{robot_name}/odom')
+                ('scan', scan_topic),
+                ('map', map_topic),
+                ('odom', odom_topic)
             ],
             output='screen'
         )
