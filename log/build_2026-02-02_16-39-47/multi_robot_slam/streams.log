@@ -1,0 +1,76 @@
+[0.009s] Invoking command in '/home/aisl/Documents/multi_robot_slam_ws/build/multi_robot_slam': BYOBU_DATE=%Y-%m-%d CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam_py:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PS1=\[\e[38;5;202m\]$(byobu_prompt_status)\[\e[00m\]$(byobu_prompt_runtime) \[\e[38;5;245m\]\u\[\e[00m\]@\[\e[38;5;172m\]\h\[\e[00m\]:\[\e[38;5;5m\]\w\[\e[00m\]$(byobu_prompt_symbol) /usr/bin/cmake /home/aisl/Documents/multi_robot_slam_ws/src/multi_robot_slam -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam
+[0.046s] -- The C compiler identification is GNU 13.3.0
+[0.084s] -- The CXX compiler identification is GNU 13.3.0
+[0.095s] -- Detecting C compiler ABI info
+[0.153s] -- Detecting C compiler ABI info - done
+[0.161s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.161s] -- Detecting C compile features
+[0.161s] -- Detecting C compile features - done
+[0.167s] -- Detecting CXX compiler ABI info
+[0.235s] -- Detecting CXX compiler ABI info - done
+[0.243s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.243s] -- Detecting CXX compile features
+[0.244s] -- Detecting CXX compile features - done
+[0.247s] -- Found ament_cmake: 2.5.4 (/opt/ros/jazzy/share/ament_cmake/cmake)
+[0.361s] -- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter 
+[0.418s] -- Override CMake install command with custom implementation using symlinks instead of copying resources
+[0.455s] -- Found rclcpp: 28.1.13 (/opt/ros/jazzy/share/rclcpp/cmake)
+[0.495s] -- Found rosidl_generator_c: 4.6.6 (/opt/ros/jazzy/share/rosidl_generator_c/cmake)
+[0.508s] -- Found rosidl_generator_cpp: 4.6.6 (/opt/ros/jazzy/share/rosidl_generator_cpp/cmake)
+[0.523s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[0.541s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[0.611s] -- Found rmw_implementation_cmake: 7.3.2 (/opt/ros/jazzy/share/rmw_implementation_cmake/cmake)
+[0.614s] -- Found rmw_fastrtps_cpp: 8.4.3 (/opt/ros/jazzy/share/rmw_fastrtps_cpp/cmake)
+[0.681s] -- Found OpenSSL: /usr/lib/x86_64-linux-gnu/libcrypto.so (found version "3.0.13")  
+[0.701s] -- Found FastRTPS: /opt/ros/jazzy/include (Required is at least version "2.13") 
+[0.720s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[0.789s] -- Found std_msgs: 5.3.6 (/opt/ros/jazzy/share/std_msgs/cmake)
+[0.802s] -- Found geometry_msgs: 5.3.6 (/opt/ros/jazzy/share/geometry_msgs/cmake)
+[0.816s] -- Found sensor_msgs: 5.3.6 (/opt/ros/jazzy/share/sensor_msgs/cmake)
+[0.838s] -- Found nav_msgs: 5.3.6 (/opt/ros/jazzy/share/nav_msgs/cmake)
+[0.863s] -- Found tf2: 0.36.16 (/opt/ros/jazzy/share/tf2/cmake)
+[0.868s] -- Found tf2_ros: 0.36.16 (/opt/ros/jazzy/share/tf2_ros/cmake)
+[0.986s] -- Found ament_lint_auto: 0.17.3 (/opt/ros/jazzy/share/ament_lint_auto/cmake)
+[1.081s] -- Added test 'copyright' to check source files copyright and LICENSE
+[1.082s] -- Added test 'flake8' to check Python code syntax and style conventions
+[1.082s] -- Configured 'flake8' exclude dirs and/or files: 
+[1.083s] -- Added test 'lint_cmake' to check CMake code style
+[1.084s] -- Added test 'pep257' to check Python code against some of the docstring style conventions in PEP 257
+[1.085s] -- Added test 'xmllint' to check XML markup files
+[1.086s] -- Configuring done (1.1s)
+[1.090s] -- Generating done (0.0s)
+[1.092s] -- Build files have been written to: /home/aisl/Documents/multi_robot_slam_ws/build/multi_robot_slam
+[1.101s] Invoked command in '/home/aisl/Documents/multi_robot_slam_ws/build/multi_robot_slam' returned '0': BYOBU_DATE=%Y-%m-%d CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam_py:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PS1=\[\e[38;5;202m\]$(byobu_prompt_status)\[\e[00m\]$(byobu_prompt_runtime) \[\e[38;5;245m\]\u\[\e[00m\]@\[\e[38;5;172m\]\h\[\e[00m\]:\[\e[38;5;5m\]\w\[\e[00m\]$(byobu_prompt_symbol) /usr/bin/cmake /home/aisl/Documents/multi_robot_slam_ws/src/multi_robot_slam -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam
+[1.102s] Invoking command in '/home/aisl/Documents/multi_robot_slam_ws/build/multi_robot_slam': BYOBU_DATE=%Y-%m-%d CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam_py:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PS1=\[\e[38;5;202m\]$(byobu_prompt_status)\[\e[00m\]$(byobu_prompt_runtime) \[\e[38;5;245m\]\u\[\e[00m\]@\[\e[38;5;172m\]\h\[\e[00m\]:\[\e[38;5;5m\]\w\[\e[00m\]$(byobu_prompt_symbol) /usr/bin/cmake --build /home/aisl/Documents/multi_robot_slam_ws/build/multi_robot_slam -- -j20 -l20
+[1.134s] Invoked command in '/home/aisl/Documents/multi_robot_slam_ws/build/multi_robot_slam' returned '0': BYOBU_DATE=%Y-%m-%d CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam_py:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PS1=\[\e[38;5;202m\]$(byobu_prompt_status)\[\e[00m\]$(byobu_prompt_runtime) \[\e[38;5;245m\]\u\[\e[00m\]@\[\e[38;5;172m\]\h\[\e[00m\]:\[\e[38;5;5m\]\w\[\e[00m\]$(byobu_prompt_symbol) /usr/bin/cmake --build /home/aisl/Documents/multi_robot_slam_ws/build/multi_robot_slam -- -j20 -l20
+[1.142s] Invoking command in '/home/aisl/Documents/multi_robot_slam_ws/build/multi_robot_slam': BYOBU_DATE=%Y-%m-%d CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam_py:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PS1=\[\e[38;5;202m\]$(byobu_prompt_status)\[\e[00m\]$(byobu_prompt_runtime) \[\e[38;5;245m\]\u\[\e[00m\]@\[\e[38;5;172m\]\h\[\e[00m\]:\[\e[38;5;5m\]\w\[\e[00m\]$(byobu_prompt_symbol) /usr/bin/cmake --install /home/aisl/Documents/multi_robot_slam_ws/build/multi_robot_slam
+[1.148s] -- Install configuration: ""
+[1.148s] -- Execute custom install script
+[1.149s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//launch/central_server.launch.py
+[1.156s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//launch/full_system.launch.py
+[1.162s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//launch/gz_multi_robot.launch.py
+[1.169s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//launch/multi_robot_slam.launch.py
+[1.177s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//launch/single_robot_slam.launch.py
+[1.183s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//config/multi_robot_params.yaml
+[1.190s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//config/multi_robot_slam.yaml
+[1.197s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//config/robots.yaml
+[1.204s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//config/rviz_config.rviz
+[1.211s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//config/slam_params.yaml
+[1.218s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//worlds/multi_robot_world.sdf
+[1.225s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//urdf/robot.urdf.xacro
+[1.232s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/ament_index/resource_index/package_run_dependencies/multi_robot_slam
+[1.239s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/ament_index/resource_index/parent_prefix_path/multi_robot_slam
+[1.245s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam/environment/ament_prefix_path.sh
+[1.252s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam/environment/ament_prefix_path.dsv
+[1.259s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam/environment/path.sh
+[1.265s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam/environment/path.dsv
+[1.272s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam/local_setup.bash
+[1.279s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam/local_setup.sh
+[1.286s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam/local_setup.zsh
+[1.292s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam/local_setup.dsv
+[1.299s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam/package.dsv
+[1.306s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/ament_index/resource_index/packages/multi_robot_slam
+[1.312s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam/cmake/multi_robot_slamConfig.cmake
+[1.318s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam/cmake/multi_robot_slamConfig-version.cmake
+[1.325s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam/package.xml
+[1.333s] Invoked command in '/home/aisl/Documents/multi_robot_slam_ws/build/multi_robot_slam' returned '0': BYOBU_DATE=%Y-%m-%d CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam_py:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PS1=\[\e[38;5;202m\]$(byobu_prompt_status)\[\e[00m\]$(byobu_prompt_runtime) \[\e[38;5;245m\]\u\[\e[00m\]@\[\e[38;5;172m\]\h\[\e[00m\]:\[\e[38;5;5m\]\w\[\e[00m\]$(byobu_prompt_symbol) /usr/bin/cmake --install /home/aisl/Documents/multi_robot_slam_ws/build/multi_robot_slam

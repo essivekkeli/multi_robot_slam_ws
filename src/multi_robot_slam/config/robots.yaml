@@ -1,0 +1,19 @@
+# Robot spawn configurations
+robots:
+  - name: robot1
+    x: 0.0
+    y: 0.0
+    z: 0.1
+    yaw: 0.0
+    
+  - name: robot2
+    x: 2.0
+    y: 0.0
+    z: 0.1
+    yaw: 0.0
+    
+  - name: robot3
+    x: 0.0
+    y: 2.0
+    z: 0.1
+    yaw: 1.57

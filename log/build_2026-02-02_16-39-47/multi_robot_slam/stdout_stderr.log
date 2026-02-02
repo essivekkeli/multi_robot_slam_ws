@@ -36,7 +36,7 @@
 -- Added test 'lint_cmake' to check CMake code style
 -- Added test 'pep257' to check Python code against some of the docstring style conventions in PEP 257
 -- Added test 'xmllint' to check XML markup files
--- Configuring done (1.0s)
+-- Configuring done (1.1s)
 -- Generating done (0.0s)
 -- Build files have been written to: /home/aisl/Documents/multi_robot_slam_ws/build/multi_robot_slam
 -- Install configuration: ""
@@ -48,6 +48,7 @@
 -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//launch/single_robot_slam.launch.py
 -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//config/multi_robot_params.yaml
 -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//config/multi_robot_slam.yaml
+-- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//config/robots.yaml
 -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//config/rviz_config.rviz
 -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//config/slam_params.yaml
 -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//worlds/multi_robot_world.sdf
