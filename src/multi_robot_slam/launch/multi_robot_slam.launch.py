@@ -38,7 +38,7 @@ def generate_launch_description():
         
         slam_node = Node(
             package='slam_toolbox',
-            executable='async_slam_toolbox_node',
+            executable='sync_slam_toolbox_node',
             name='slam_toolbox',
             namespace=name,
             parameters=[
@@ -51,9 +51,9 @@ def generate_launch_description():
                 }
             ],
             remappings=[
-                ('scan', scan_topic),
-                ('map', map_topic),
-                ('odom', odom_topic)
+                ('/scan', scan_topic),
+                ('/map', map_topic),
+               # ('/odom', odom_topic)
             ],
             output='screen'
         )
