@@ -34,11 +34,13 @@ def generate_launch_description():
         base_frame = name + '/base_footprint'
         scan_topic = '/' + name + '/scan'
         map_topic = '/' + name + '/map'
-        odom_topic = '/' + name + '/odom'
+        #
+        # 
+        # odom_topic = '/' + name + '/odom'
         
         slam_node = Node(
             package='slam_toolbox',
-            executable='sync_slam_toolbox_node',
+            executable='async_slam_toolbox_node',
             name='slam_toolbox',
             namespace=name,
             parameters=[
@@ -51,13 +53,27 @@ def generate_launch_description():
                 }
             ],
             remappings=[
-                ('/scan', scan_topic),
-                ('/map', map_topic),
-               # ('/odom', odom_topic)
+                ('scan', scan_topic),
+                ('map', map_topic),
+                #('/odom', odom_topic)
             ],
             output='screen'
         )
         slam_nodes.append(slam_node)
+
+        #TF publisher from odometry
+        odom_tf_node = Node(
+            package='multi_robot_slam',
+            executable='odom_to_tf.py',
+            name=f'{name}_odom_to_tf',
+            parameters=[{
+                'use_sim_time': use_sim_time,
+                'robot_name': name
+            }],
+            output='screen'
+        )
+        slam_nodes.append(odom_tf_node)
+
     
     # Central server node
     central_server_node = Node(

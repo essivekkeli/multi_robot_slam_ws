@@ -98,13 +98,13 @@
 		{
 			"backtrace" : 9,
 			"isGenerated" : true,
-			"path" : "/home/essivekkeli/multi_robot_slam_ws/build/multi_robot_slam/CMakeFiles/multi_robot_slam_uninstall",
+			"path" : "/home/aisl/Documents/multi_robot_slam_ws/build/multi_robot_slam/CMakeFiles/multi_robot_slam_uninstall",
 			"sourceGroupIndex" : 0
 		},
 		{
 			"backtrace" : 0,
 			"isGenerated" : true,
-			"path" : "/home/essivekkeli/multi_robot_slam_ws/build/multi_robot_slam/CMakeFiles/multi_robot_slam_uninstall.rule",
+			"path" : "/home/aisl/Documents/multi_robot_slam_ws/build/multi_robot_slam/CMakeFiles/multi_robot_slam_uninstall.rule",
 			"sourceGroupIndex" : 1
 		}
 	],

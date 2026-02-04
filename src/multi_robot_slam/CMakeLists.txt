@@ -21,6 +21,7 @@ install(DIRECTORY
   config
   worlds
   urdf
+  scripts
   DESTINATION share/multi_robot_slam/
 )
 
