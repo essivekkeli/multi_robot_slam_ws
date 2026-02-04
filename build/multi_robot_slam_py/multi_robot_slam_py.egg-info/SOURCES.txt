@@ -3,6 +3,8 @@ setup.cfg
 setup.py
 multi_robot_slam_py/__init__.py
 multi_robot_slam_py/central_server.py
+multi_robot_slam_py/coordinate_manager.py
+multi_robot_slam_py/map_visualizer.py
 multi_robot_slam_py.egg-info/PKG-INFO
 multi_robot_slam_py.egg-info/SOURCES.txt
 multi_robot_slam_py.egg-info/dependency_links.txt
