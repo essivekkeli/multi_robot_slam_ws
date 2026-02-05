@@ -83,6 +83,7 @@
   <gazebo reference="lidar">
     <sensor name="lidar" type="gpu_lidar">
       <pose>0 0 0 0 0 0</pose>
+      <frame_name>$(arg robot_name)/lidar</frame_name>
       <topic>$(arg robot_name)/scan</topic>
       <update_rate>10</update_rate>
 
@@ -126,7 +127,10 @@
       <odom_frame>$(arg robot_name)/odom</odom_frame>
       <child_frame_id>$(arg robot_name)/base_footprint</child_frame_id>
 
+      <publish_odom>true</publish_odom>
       <publish_odom_tf>true</publish_odom_tf>
+      <use_sim_time>true</use_sim_time>
+
       <publish_wheel_tf>false</publish_wheel_tf>
       <odom_publish_frequency>50</odom_publish_frequency>
     </plugin>
@@ -140,6 +144,18 @@
       <topic>$(arg robot_name)/tf</topic>
     </plugin>
   </gazebo>
+
+
+  <gazebo>
+    <plugin filename="gz-sim-odometry-publisher-system"
+            name="gz::sim::systems::OdometryPublisher">
+      <odom_topic>$(arg robot_name)/odom</odom_topic>
+      <odom_frame>$(arg robot_name)/odom</odom_frame>
+      <robot_base_frame>$(arg robot_name)/base_footprint</robot_base_frame>
+      <odom_publish_frequency>50</odom_publish_frequency>
+    </plugin>
+  </gazebo>
+
 
   <!-- ================= WHEELS ================= -->
 

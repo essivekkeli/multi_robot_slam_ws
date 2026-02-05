@@ -313,6 +313,9 @@ message(STATUS "Execute custom install script")
 # install(DIRECTORY "launch" "config" "worlds" "urdf" "scripts" "DESTINATION" "share/multi_robot_slam/")
 ament_cmake_symlink_install_directory("/home/aisl/Documents/multi_robot_slam_ws/src/multi_robot_slam" DIRECTORY "launch" "config" "worlds" "urdf" "scripts" "DESTINATION" "share/multi_robot_slam/")
 
+# install(PROGRAMS "scripts/odom_to_tf.py" "scripts/scan_frame_fixer.py" "DESTINATION" "lib/multi_robot_slam")
+ament_cmake_symlink_install_programs("/home/aisl/Documents/multi_robot_slam_ws/src/multi_robot_slam" PROGRAMS "scripts/odom_to_tf.py" "scripts/scan_frame_fixer.py" "DESTINATION" "lib/multi_robot_slam")
+
 # install(FILES "/home/aisl/Documents/multi_robot_slam_ws/build/multi_robot_slam/ament_cmake_index/share/ament_index/resource_index/package_run_dependencies/multi_robot_slam" "DESTINATION" "share/ament_index/resource_index/package_run_dependencies")
 ament_cmake_symlink_install_files("/home/aisl/Documents/multi_robot_slam_ws/src/multi_robot_slam" FILES "/home/aisl/Documents/multi_robot_slam_ws/build/multi_robot_slam/ament_cmake_index/share/ament_index/resource_index/package_run_dependencies/multi_robot_slam" "DESTINATION" "share/ament_index/resource_index/package_run_dependencies")
 

@@ -53,7 +53,7 @@ def generate_launch_description():
                 }
             ],
             remappings=[
-                ('scan', scan_topic),
+                ('scan', f'/{name}/scan_fixed'),  # Now: scan → /robot1/scan_fixed
                 ('map', map_topic),
                 #('/odom', odom_topic)
             ],
@@ -73,6 +73,18 @@ def generate_launch_description():
             output='screen'
         )
         slam_nodes.append(odom_tf_node)
+
+        scan_fixer_node = Node(
+            package='multi_robot_slam',
+            executable='scan_frame_fixer.py',
+            name=f'{name}_scan_fixer',
+            parameters=[{
+                'use_sim_time': use_sim_time,
+                'robot_name': name
+            }],
+            output='screen'
+        )
+        slam_nodes.append(scan_fixer_node)
 
     
     # Central server node
