@@ -53,8 +53,10 @@ def generate_launch_description():
                 }
             ],
             remappings=[
-                ('scan', f'/{name}/scan_fixed'),  # Now: scan → /robot1/scan_fixed
-                ('map', map_topic),
+                #(f'/{name}/scan', f'/{name}/scan_fixed'),
+                #(f'/{name}/map', map_topic),
+                ('scan', 'scan_fixed'),  # Both relative - namespace will add /robot1/
+                ('map', 'map'),
                 #('/odom', odom_topic)
             ],
             output='screen'
@@ -85,6 +87,18 @@ def generate_launch_description():
             output='screen'
         )
         slam_nodes.append(scan_fixer_node)
+
+        # Relay scan_fixed to global /scan for SLAM
+        scan_relay_node = Node(
+            package='topic_tools',
+            executable='relay',
+            name=f'{name}_scan_relay',
+            arguments=[f'/{name}/scan_fixed', '/scan'],
+            parameters=[{'use_sim_time': use_sim_time}],
+            output='screen'
+        )
+        slam_nodes.append(scan_relay_node)
+
 
     
     # Central server node
