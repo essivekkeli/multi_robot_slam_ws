@@ -138,7 +138,7 @@ def create_world_frame_broadcasters(robots_config):
                 '0.0',                # pitch  
                 str(robot['yaw']),    # yaw rotation from config
                 'world',              # parent frame
-                f'{robot["name"]}/odom'  # child frame
+                f'{robot["name"]}/map'  # child frame
             ],
             output='screen',
             parameters=[{'use_sim_time': True}]

@@ -38,11 +38,20 @@ def generate_launch_description():
         # 
         # odom_topic = '/' + name + '/odom'
         
+    # Create SLAM nodes for each robot
+    slam_nodes = []
+    for name in robot_names:
+        # Create frame names
+        odom_frame = f'{name}/odom'
+        map_frame = f'{name}/map'
+        base_frame = f'{name}/base_footprint'
+        
+        # SLAM node WITHOUT namespace
         slam_node = Node(
             package='slam_toolbox',
             executable='async_slam_toolbox_node',
-            name='slam_toolbox',
-            namespace=name,
+            name=f'{name}_slam_toolbox',  # Unique name per robot
+            # NO namespace parameter!
             parameters=[
                 slam_params_file,
                 {
@@ -53,17 +62,15 @@ def generate_launch_description():
                 }
             ],
             remappings=[
-                #(f'/{name}/scan', f'/{name}/scan_fixed'),
-                #(f'/{name}/map', map_topic),
-                ('scan', 'scan_fixed'),  # Both relative - namespace will add /robot1/
-                ('map', 'map'),
-                #('/odom', odom_topic)
+                ('scan', f'/{name}/scan_fixed'),  # Absolute remapping
+                ('map', f'/{name}/map'),
+                ('map_metadata', f'/{name}/map_metadata'),
             ],
             output='screen'
         )
         slam_nodes.append(slam_node)
-
-        #TF publisher from odometry
+        
+        # TF publisher from odometry
         odom_tf_node = Node(
             package='multi_robot_slam',
             executable='odom_to_tf.py',
@@ -75,7 +82,8 @@ def generate_launch_description():
             output='screen'
         )
         slam_nodes.append(odom_tf_node)
-
+        
+        # Scan frame fixer
         scan_fixer_node = Node(
             package='multi_robot_slam',
             executable='scan_frame_fixer.py',
@@ -87,17 +95,8 @@ def generate_launch_description():
             output='screen'
         )
         slam_nodes.append(scan_fixer_node)
-
-        # Relay scan_fixed to global /scan for SLAM
-        scan_relay_node = Node(
-            package='topic_tools',
-            executable='relay',
-            name=f'{name}_scan_relay',
-            arguments=[f'/{name}/scan_fixed', '/scan'],
-            parameters=[{'use_sim_time': use_sim_time}],
-            output='screen'
-        )
-        slam_nodes.append(scan_relay_node)
+        
+        # NO RELAY NEEDED! Each SLAM subscribes directly to its own scan_fixed
 
 
     
@@ -120,7 +119,7 @@ def generate_launch_description():
         executable='rviz2',
         name='rviz2',
         arguments=['-d', rviz_config],
-        parameters=[{'use_sim_time': use_sim_time}],
+        parameters=[{'use_sim_time': True}],
         output='screen'
     )
     
