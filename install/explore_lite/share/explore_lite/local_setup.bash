@@ -1,0 +1,1 @@
+/home/aisl/Documents/multi_robot_slam_ws/build/explore_lite/ament_cmake_environment_hooks/local_setup.bash

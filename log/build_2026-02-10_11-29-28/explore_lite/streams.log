@@ -1,0 +1,102 @@
+[0.014s] Invoking command in '/home/aisl/Documents/multi_robot_slam_ws/build/explore_lite': BYOBU_DATE=%Y-%m-%d CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam_py:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PS1=\[\e[38;5;202m\]$(byobu_prompt_status)\[\e[00m\]$(byobu_prompt_runtime) \[\e[38;5;245m\]\u\[\e[00m\]@\[\e[38;5;172m\]\h\[\e[00m\]:\[\e[38;5;5m\]\w\[\e[00m\]$(byobu_prompt_symbol) /usr/bin/cmake /home/aisl/Documents/multi_robot_slam_ws/src/m-explore-ros2/m-explore-ros2-main/explore -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/aisl/Documents/multi_robot_slam_ws/install/explore_lite
+[0.192s] -- The C compiler identification is GNU 13.3.0
+[0.193s] -- The CXX compiler identification is GNU 13.3.0
+[0.193s] -- Detecting C compiler ABI info
+[0.193s] -- Detecting C compiler ABI info - done
+[0.193s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.193s] -- Detecting C compile features
+[0.193s] -- Detecting C compile features - done
+[0.193s] -- Detecting CXX compiler ABI info
+[0.236s] -- Detecting CXX compiler ABI info - done
+[0.249s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.249s] -- Detecting CXX compile features
+[0.250s] -- Detecting CXX compile features - done
+[0.250s] -- BuilD for ROS2: jazzy
+[0.254s] -- Found ament_cmake: 2.5.4 (/opt/ros/jazzy/share/ament_cmake/cmake)
+[0.364s] -- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter 
+[0.418s] -- Override CMake install command with custom implementation using symlinks instead of copying resources
+[0.451s] -- Found rclcpp: 28.1.13 (/opt/ros/jazzy/share/rclcpp/cmake)
+[0.489s] -- Found rosidl_generator_c: 4.6.6 (/opt/ros/jazzy/share/rosidl_generator_c/cmake)
+[0.502s] -- Found rosidl_generator_cpp: 4.6.6 (/opt/ros/jazzy/share/rosidl_generator_cpp/cmake)
+[0.516s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[0.533s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[0.601s] -- Found rmw_implementation_cmake: 7.3.2 (/opt/ros/jazzy/share/rmw_implementation_cmake/cmake)
+[0.604s] -- Found rmw_fastrtps_cpp: 8.4.3 (/opt/ros/jazzy/share/rmw_fastrtps_cpp/cmake)
+[0.662s] -- Found OpenSSL: /usr/lib/x86_64-linux-gnu/libcrypto.so (found version "3.0.13")  
+[0.678s] -- Found FastRTPS: /opt/ros/jazzy/include (Required is at least version "2.13") 
+[0.696s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[0.761s] -- Found std_msgs: 5.3.6 (/opt/ros/jazzy/share/std_msgs/cmake)
+[0.774s] -- Found sensor_msgs: 5.3.6 (/opt/ros/jazzy/share/sensor_msgs/cmake)
+[0.808s] -- Found tf2_ros: 0.36.16 (/opt/ros/jazzy/share/tf2_ros/cmake)
+[0.922s] -- Found tf2_geometry_msgs: 0.36.16 (/opt/ros/jazzy/share/tf2_geometry_msgs/cmake)
+[0.937s] -- Found eigen3_cmake_module: 0.3.0 (/opt/ros/jazzy/share/eigen3_cmake_module/cmake)
+[0.938s] -- Found Eigen3: TRUE (found version "3.4.0") 
+[0.939s] -- Ensuring Eigen3 include directory is part of orocos-kdl CMake target
+[0.942s] -- Found nav2_msgs: 1.3.10 (/opt/ros/jazzy/share/nav2_msgs/cmake)
+[1.063s] -- Found map_msgs: 2.4.1 (/opt/ros/jazzy/share/map_msgs/cmake)
+[1.091s] -- Found visualization_msgs: 5.3.6 (/opt/ros/jazzy/share/visualization_msgs/cmake)
+[1.119s] -- Found nav2_costmap_2d: 1.3.10 (/opt/ros/jazzy/share/nav2_costmap_2d/cmake)
+[1.271s] -- Found ament_lint_auto: 0.17.3 (/opt/ros/jazzy/share/ament_lint_auto/cmake)
+[1.372s] -- Found ament_cmake_gtest: 2.5.4 (/opt/ros/jazzy/share/ament_cmake_gtest/cmake)
+[1.376s] -- Found gtest sources under '/opt/ros/jazzy/src/gtest_vendor': C++ tests using 'Google Test' will be built
+[1.379s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+[1.438s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+[1.439s] -- Found Threads: TRUE  
+[1.447s] -- Added test 'cppcheck' to perform static code analysis on C / C++ code
+[1.447s] -- Configured cppcheck include dirs: /home/aisl/Documents/multi_robot_slam_ws/src/m-explore-ros2/m-explore-ros2-main/explore/include;$<BUILD_INTERFACE:/home/aisl/Documents/multi_robot_slam_ws/src/m-explore-ros2/m-explore-ros2-main/explore/include>
+[1.447s] -- Configured cppcheck exclude dirs and/or files: 
+[1.448s] -- Added test 'flake8' to check Python code syntax and style conventions
+[1.448s] -- Configured 'flake8' exclude dirs and/or files: 
+[1.449s] -- Added test 'lint_cmake' to check CMake code style
+[1.449s] -- Added test 'pep257' to check Python code against some of the docstring style conventions in PEP 257
+[1.450s] -- Added test 'uncrustify' to check C / C++ code style
+[1.450s] -- Configured uncrustify additional arguments: 
+[1.451s] -- Added test 'xmllint' to check XML markup files
+[1.453s] -- Configuring done (1.4s)
+[1.507s] -- Generating done (0.0s)
+[1.515s] -- Build files have been written to: /home/aisl/Documents/multi_robot_slam_ws/build/explore_lite
+[1.524s] Invoked command in '/home/aisl/Documents/multi_robot_slam_ws/build/explore_lite' returned '0': BYOBU_DATE=%Y-%m-%d CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam_py:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PS1=\[\e[38;5;202m\]$(byobu_prompt_status)\[\e[00m\]$(byobu_prompt_runtime) \[\e[38;5;245m\]\u\[\e[00m\]@\[\e[38;5;172m\]\h\[\e[00m\]:\[\e[38;5;5m\]\w\[\e[00m\]$(byobu_prompt_symbol) /usr/bin/cmake /home/aisl/Documents/multi_robot_slam_ws/src/m-explore-ros2/m-explore-ros2-main/explore -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/aisl/Documents/multi_robot_slam_ws/install/explore_lite
+[1.525s] Invoking command in '/home/aisl/Documents/multi_robot_slam_ws/build/explore_lite': BYOBU_DATE=%Y-%m-%d CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam_py:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PS1=\[\e[38;5;202m\]$(byobu_prompt_status)\[\e[00m\]$(byobu_prompt_runtime) \[\e[38;5;245m\]\u\[\e[00m\]@\[\e[38;5;172m\]\h\[\e[00m\]:\[\e[38;5;5m\]\w\[\e[00m\]$(byobu_prompt_symbol) /usr/bin/cmake --build /home/aisl/Documents/multi_robot_slam_ws/build/explore_lite -- -j20 -l20
+[1.559s] [ 20%] [32mBuilding CXX object gtest/CMakeFiles/gtest_main.dir/src/gtest_main.cc.o[0m
+[1.559s] [ 20%] [32mBuilding CXX object gtest/CMakeFiles/gtest.dir/src/gtest-all.cc.o[0m
+[1.560s] [ 30%] [32mBuilding CXX object CMakeFiles/explore.dir/src/costmap_client.cpp.o[0m
+[1.560s] [ 40%] [32mBuilding CXX object CMakeFiles/explore.dir/src/explore.cpp.o[0m
+[1.561s] [ 50%] [32mBuilding CXX object CMakeFiles/explore.dir/src/frontier_search.cpp.o[0m
+[2.075s] [ 60%] [32m[1mLinking CXX static library libgtest_main.a[0m
+[2.100s] [ 60%] Built target gtest_main
+[4.243s] [ 70%] [32m[1mLinking CXX static library libgtest.a[0m
+[4.283s] [ 70%] Built target gtest
+[4.300s] [ 80%] [32mBuilding CXX object CMakeFiles/test_explore.dir/test/test_explore.cpp.o[0m
+[5.155s] [ 90%] [32m[1mLinking CXX executable test_explore[0m
+[5.810s] [ 90%] Built target test_explore
+[11.222s] [100%] [32m[1mLinking CXX executable explore[0m
+[12.263s] [100%] Built target explore
+[12.272s] Invoked command in '/home/aisl/Documents/multi_robot_slam_ws/build/explore_lite' returned '0': BYOBU_DATE=%Y-%m-%d CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam_py:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PS1=\[\e[38;5;202m\]$(byobu_prompt_status)\[\e[00m\]$(byobu_prompt_runtime) \[\e[38;5;245m\]\u\[\e[00m\]@\[\e[38;5;172m\]\h\[\e[00m\]:\[\e[38;5;5m\]\w\[\e[00m\]$(byobu_prompt_symbol) /usr/bin/cmake --build /home/aisl/Documents/multi_robot_slam_ws/build/explore_lite -- -j20 -l20
+[12.273s] Invoking command in '/home/aisl/Documents/multi_robot_slam_ws/build/explore_lite': BYOBU_DATE=%Y-%m-%d CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam_py:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PS1=\[\e[38;5;202m\]$(byobu_prompt_status)\[\e[00m\]$(byobu_prompt_runtime) \[\e[38;5;245m\]\u\[\e[00m\]@\[\e[38;5;172m\]\h\[\e[00m\]:\[\e[38;5;5m\]\w\[\e[00m\]$(byobu_prompt_symbol) /usr/bin/cmake --install /home/aisl/Documents/multi_robot_slam_ws/build/explore_lite
+[12.278s] -- Install configuration: ""
+[12.279s] -- Execute custom install script
+[12.279s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/explore_lite/include/explore//costmap_client.h
+[12.286s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/explore_lite/include/explore//costmap_tools.h
+[12.292s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/explore_lite/include/explore//explore.h
+[12.298s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/explore_lite/include/explore//frontier_search.h
+[12.305s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/explore_lite/share/explore_lite/config/params.yaml
+[12.311s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/explore_lite/share/explore_lite/config/params_costmap.yaml
+[12.317s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/explore_lite/share/explore_lite/launch/explore.launch.py
+[12.324s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/explore_lite/lib/explore_lite/explore
+[12.331s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/explore_lite/share/ament_index/resource_index/package_run_dependencies/explore_lite
+[12.338s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/explore_lite/share/ament_index/resource_index/parent_prefix_path/explore_lite
+[12.345s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/explore_lite/share/explore_lite/environment/ament_prefix_path.sh
+[12.351s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/explore_lite/share/explore_lite/environment/ament_prefix_path.dsv
+[12.358s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/explore_lite/share/explore_lite/environment/path.sh
+[12.364s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/explore_lite/share/explore_lite/environment/path.dsv
+[12.370s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/explore_lite/share/explore_lite/local_setup.bash
+[12.377s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/explore_lite/share/explore_lite/local_setup.sh
+[12.383s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/explore_lite/share/explore_lite/local_setup.zsh
+[12.390s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/explore_lite/share/explore_lite/local_setup.dsv
+[12.396s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/explore_lite/share/explore_lite/package.dsv
+[12.403s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/explore_lite/share/ament_index/resource_index/packages/explore_lite
+[12.410s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/explore_lite/share/explore_lite/cmake/ament_cmake_export_include_directories-extras.cmake
+[12.417s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/explore_lite/share/explore_lite/cmake/explore_liteConfig.cmake
+[12.424s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/explore_lite/share/explore_lite/cmake/explore_liteConfig-version.cmake
+[12.431s] -- Symlinking: /home/aisl/Documents/multi_robot_slam_ws/install/explore_lite/share/explore_lite/package.xml
+[12.440s] Invoked command in '/home/aisl/Documents/multi_robot_slam_ws/build/explore_lite' returned '0': BYOBU_DATE=%Y-%m-%d CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam_py:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PS1=\[\e[38;5;202m\]$(byobu_prompt_status)\[\e[00m\]$(byobu_prompt_runtime) \[\e[38;5;245m\]\u\[\e[00m\]@\[\e[38;5;172m\]\h\[\e[00m\]:\[\e[38;5;5m\]\w\[\e[00m\]$(byobu_prompt_symbol) /usr/bin/cmake --install /home/aisl/Documents/multi_robot_slam_ws/build/explore_lite
