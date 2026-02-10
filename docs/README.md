@@ -359,3 +359,22 @@ If you use this work, please cite:
 **Status**: Active Development (Phase 1 Complete)  
 **Version**: 0.1.0 (Baseline)  
 **Last Updated**: 2026-01-29
+
+
+
+
+(Almost) Full System Launch
+ros2 launch multi_robot_slam full_system.launch.py
+
+
+Activate SLAM after waiting about 15 seconds
+ros2 lifecycle set /robot1/slam_toolbox configure
+ros2 lifecycle set /robot1/slam_toolbox activate
+ros2 lifecycle set /robot2/slam_toolbox configure
+ros2 lifecycle set /robot2/slam_toolbox activate
+ros2 lifecycle set /robot3/slam_toolbox configure
+ros2 lifecycle set /robot3/slam_toolbox activate
+
+
+Launch Map Merge
+ros2 launch multirobot_map_merge map_merge.launch.py

@@ -22,3 +22,8 @@ map_merge:
     /robot2/map_merge/init_pose_y: 1.0
     /robot2/map_merge/init_pose_z: 0.0
     /robot2/map_merge/init_pose_yaw: 0.0
+    
+    /robot3/map_merge/init_pose_x: 3.0
+    /robot3/map_merge/init_pose_y: 1.0
+    /robot3/map_merge/init_pose_z: 0.0
+    /robot3/map_merge/init_pose_yaw: 0.0

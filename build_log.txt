@@ -1,0 +1,8 @@
+[0.151s] WARNING:colcon.colcon_ros.prefix_path.ament:The path '/home/aisl/Documents/multi_robot_slam_ws/install/explore_lite' in the environment variable AMENT_PREFIX_PATH doesn't exist
+[0.151s] WARNING:colcon.colcon_ros.prefix_path.catkin:The path '/home/aisl/Documents/multi_robot_slam_ws/install/explore_lite' in the environment variable CMAKE_PREFIX_PATH doesn't exist
+Starting >>> multi_robot_slam
+Starting >>> multi_robot_slam_py
+Finished <<< multi_robot_slam [0.21s]
+Finished <<< multi_robot_slam_py [1.12s]
+
+Summary: 2 packages finished [1.25s]

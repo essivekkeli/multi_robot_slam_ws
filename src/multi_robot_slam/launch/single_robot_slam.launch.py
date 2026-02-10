@@ -41,7 +41,7 @@ def generate_launch_description():
             }
         ],
         remappings=[
-            ('scan', ['/', robot_name, '/scan']),
+            ('scan', ['/', robot_name, '/scan_fixed']),
             ('map', ['/', robot_name, '/map']),
             ('odom', ['/', robot_name, '/odom'])
         ],
