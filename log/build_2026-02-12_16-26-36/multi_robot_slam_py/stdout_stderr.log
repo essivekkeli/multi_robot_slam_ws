@@ -32,4 +32,5 @@ running install_egg_info
 Copying ../../build/multi_robot_slam_py/multi_robot_slam_py.egg-info to /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam_py/lib/python3.12/site-packages/multi_robot_slam_py-0.0.1-py3.12.egg-info
 running install_scripts
 Installing central_server script to /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam_py/lib/multi_robot_slam_py
+Installing smooth_circle script to /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam_py/lib/multi_robot_slam_py
 writing list of installed files to '/home/aisl/Documents/multi_robot_slam_ws/build/multi_robot_slam_py/install.log'

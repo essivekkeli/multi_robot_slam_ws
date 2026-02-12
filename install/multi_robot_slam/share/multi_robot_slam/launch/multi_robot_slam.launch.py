@@ -70,6 +70,7 @@ def generate_launch_description():
         )
         slam_nodes.append(slam_node)
         
+
         # TF publisher from odometry
         odom_tf_node = Node(
             package='multi_robot_slam',
@@ -83,6 +84,8 @@ def generate_launch_description():
         )
         slam_nodes.append(odom_tf_node)
         
+
+
         # Scan frame fixer
         scan_fixer_node = Node(
             package='multi_robot_slam',

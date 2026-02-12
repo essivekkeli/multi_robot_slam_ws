@@ -53,22 +53,22 @@ Checking MD5 sum of /home/aisl/Documents/multi_robot_slam_ws/build/multirobot_ma
 -- Added test 'uncrustify' to check C / C++ code style
 -- Configured uncrustify additional arguments: 
 -- Added test 'xmllint' to check XML markup files
--- Configuring done (4.0s)
+-- Configuring done (2.6s)
 -- Generating done (0.0s)
 -- Build files have been written to: /home/aisl/Documents/multi_robot_slam_ws/build/multirobot_map_merge
-[ 25%] [32mBuilding CXX object CMakeFiles/combine_grids.dir/src/combine_grids/grid_compositor.cpp.o[0m
-[ 25%] [32mBuilding CXX object gtest/CMakeFiles/gtest_main.dir/src/gtest_main.cc.o[0m
-[ 25%] [32mBuilding CXX object CMakeFiles/combine_grids.dir/src/combine_grids/grid_warper.cpp.o[0m
+[ 41%] [32mBuilding CXX object CMakeFiles/combine_grids.dir/src/combine_grids/grid_warper.cpp.o[0m
+[ 41%] [32mBuilding CXX object gtest/CMakeFiles/gtest_main.dir/src/gtest_main.cc.o[0m
+[ 41%] [32mBuilding CXX object CMakeFiles/combine_grids.dir/src/combine_grids/grid_compositor.cpp.o[0m
 [ 41%] [32mBuilding CXX object CMakeFiles/combine_grids.dir/src/combine_grids/merging_pipeline.cpp.o[0m
 [ 41%] [32mBuilding CXX object gtest/CMakeFiles/gtest.dir/src/gtest-all.cc.o[0m
 [ 50%] [32m[1mLinking CXX static library libgtest_main.a[0m
 [ 50%] Built target gtest_main
-[ 58%] [32m[1mLinking CXX static library libcombine_grids.a[0m
-[ 58%] Built target combine_grids
-[ 66%] [32mBuilding CXX object CMakeFiles/map_merge.dir/src/map_merge.cpp.o[0m
-[ 75%] [32m[1mLinking CXX static library libgtest.a[0m
-[ 75%] Built target gtest
+[ 58%] [32m[1mLinking CXX static library libgtest.a[0m
+[ 66%] [32m[1mLinking CXX static library libcombine_grids.a[0m
+[ 66%] Built target gtest
+[ 66%] Built target combine_grids
 [ 83%] [32mBuilding CXX object CMakeFiles/test_merging_pipeline.dir/test/test_merging_pipeline.cpp.o[0m
+[ 83%] [32mBuilding CXX object CMakeFiles/map_merge.dir/src/map_merge.cpp.o[0m
 [ 91%] [32m[1mLinking CXX executable test_merging_pipeline[0m
 [ 91%] Built target test_merging_pipeline
 [100%] [32m[1mLinking CXX executable map_merge[0m

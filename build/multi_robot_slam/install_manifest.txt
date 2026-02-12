@@ -11,6 +11,7 @@
 /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//worlds/multi_robot_world.sdf
 /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//urdf/robot.urdf.xacro
 /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//scripts/scan_frame_fixer.py
+/home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//scripts/smooth_circle.py
 /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//scripts/odom_to_tf.py
 /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/lib/multi_robot_slam/odom_to_tf.py
 /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam/lib/multi_robot_slam/scan_frame_fixer.py
