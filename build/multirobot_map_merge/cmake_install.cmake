@@ -43,117 +43,11 @@ if(NOT DEFINED CMAKE_OBJDUMP)
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include/map_merge/" TYPE DIRECTORY FILES "/home/aisl/Documents/multi_robot_slam_ws/src/m-explore-ros2/m-explore-ros2-main/map_merge/include/map_merge/")
-endif()
-
-if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/multirobot_map_merge" TYPE DIRECTORY FILES
-    "/home/aisl/Documents/multi_robot_slam_ws/src/m-explore-ros2/m-explore-ros2-main/map_merge/launch"
-    "/home/aisl/Documents/multi_robot_slam_ws/src/m-explore-ros2/m-explore-ros2-main/map_merge/config"
-    )
+  include("/home/aisl/Documents/multi_robot_slam_ws/build/multirobot_map_merge/ament_cmake_symlink_install/ament_cmake_symlink_install.cmake")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE STATIC_LIBRARY FILES "/home/aisl/Documents/multi_robot_slam_ws/build/multirobot_map_merge/libcombine_grids.a")
-endif()
-
-if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/multirobot_map_merge/map_merge" AND
-     NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/multirobot_map_merge/map_merge")
-    file(RPATH_CHECK
-         FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/multirobot_map_merge/map_merge"
-         RPATH "")
-  endif()
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/multirobot_map_merge" TYPE EXECUTABLE FILES "/home/aisl/Documents/multi_robot_slam_ws/build/multirobot_map_merge/map_merge")
-  if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/multirobot_map_merge/map_merge" AND
-     NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/multirobot_map_merge/map_merge")
-    file(RPATH_CHANGE
-         FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/multirobot_map_merge/map_merge"
-         OLD_RPATH "/opt/ros/jazzy/lib:"
-         NEW_RPATH "")
-    if(CMAKE_INSTALL_DO_STRIP)
-      execute_process(COMMAND "/usr/bin/strip" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/multirobot_map_merge/map_merge")
-    endif()
-  endif()
-endif()
-
-if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  include("/home/aisl/Documents/multi_robot_slam_ws/build/multirobot_map_merge/CMakeFiles/map_merge.dir/install-cxx-module-bmi-noconfig.cmake" OPTIONAL)
-endif()
-
-if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/multirobot_map_merge/environment" TYPE FILE FILES "/opt/ros/jazzy/lib/python3.12/site-packages/ament_package/template/environment_hook/library_path.sh")
-endif()
-
-if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/multirobot_map_merge/environment" TYPE FILE FILES "/home/aisl/Documents/multi_robot_slam_ws/build/multirobot_map_merge/ament_cmake_environment_hooks/library_path.dsv")
-endif()
-
-if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/ament_index/resource_index/package_run_dependencies" TYPE FILE FILES "/home/aisl/Documents/multi_robot_slam_ws/build/multirobot_map_merge/ament_cmake_index/share/ament_index/resource_index/package_run_dependencies/multirobot_map_merge")
-endif()
-
-if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/ament_index/resource_index/parent_prefix_path" TYPE FILE FILES "/home/aisl/Documents/multi_robot_slam_ws/build/multirobot_map_merge/ament_cmake_index/share/ament_index/resource_index/parent_prefix_path/multirobot_map_merge")
-endif()
-
-if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/multirobot_map_merge/environment" TYPE FILE FILES "/opt/ros/jazzy/share/ament_cmake_core/cmake/environment_hooks/environment/ament_prefix_path.sh")
-endif()
-
-if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/multirobot_map_merge/environment" TYPE FILE FILES "/home/aisl/Documents/multi_robot_slam_ws/build/multirobot_map_merge/ament_cmake_environment_hooks/ament_prefix_path.dsv")
-endif()
-
-if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/multirobot_map_merge/environment" TYPE FILE FILES "/opt/ros/jazzy/share/ament_cmake_core/cmake/environment_hooks/environment/path.sh")
-endif()
-
-if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/multirobot_map_merge/environment" TYPE FILE FILES "/home/aisl/Documents/multi_robot_slam_ws/build/multirobot_map_merge/ament_cmake_environment_hooks/path.dsv")
-endif()
-
-if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/multirobot_map_merge" TYPE FILE FILES "/home/aisl/Documents/multi_robot_slam_ws/build/multirobot_map_merge/ament_cmake_environment_hooks/local_setup.bash")
-endif()
-
-if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/multirobot_map_merge" TYPE FILE FILES "/home/aisl/Documents/multi_robot_slam_ws/build/multirobot_map_merge/ament_cmake_environment_hooks/local_setup.sh")
-endif()
-
-if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/multirobot_map_merge" TYPE FILE FILES "/home/aisl/Documents/multi_robot_slam_ws/build/multirobot_map_merge/ament_cmake_environment_hooks/local_setup.zsh")
-endif()
-
-if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/multirobot_map_merge" TYPE FILE FILES "/home/aisl/Documents/multi_robot_slam_ws/build/multirobot_map_merge/ament_cmake_environment_hooks/local_setup.dsv")
-endif()
-
-if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/multirobot_map_merge" TYPE FILE FILES "/home/aisl/Documents/multi_robot_slam_ws/build/multirobot_map_merge/ament_cmake_environment_hooks/package.dsv")
-endif()
-
-if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/ament_index/resource_index/packages" TYPE FILE FILES "/home/aisl/Documents/multi_robot_slam_ws/build/multirobot_map_merge/ament_cmake_index/share/ament_index/resource_index/packages/multirobot_map_merge")
-endif()
-
-if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/multirobot_map_merge/cmake" TYPE FILE FILES "/home/aisl/Documents/multi_robot_slam_ws/build/multirobot_map_merge/ament_cmake_export_include_directories/ament_cmake_export_include_directories-extras.cmake")
-endif()
-
-if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/multirobot_map_merge/cmake" TYPE FILE FILES "/home/aisl/Documents/multi_robot_slam_ws/build/multirobot_map_merge/ament_cmake_export_libraries/ament_cmake_export_libraries-extras.cmake")
-endif()
-
-if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/multirobot_map_merge/cmake" TYPE FILE FILES
-    "/home/aisl/Documents/multi_robot_slam_ws/build/multirobot_map_merge/ament_cmake_core/multirobot_map_mergeConfig.cmake"
-    "/home/aisl/Documents/multi_robot_slam_ws/build/multirobot_map_merge/ament_cmake_core/multirobot_map_mergeConfig-version.cmake"
-    )
-endif()
-
-if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/multirobot_map_merge" TYPE FILE FILES "/home/aisl/Documents/multi_robot_slam_ws/src/m-explore-ros2/m-explore-ros2-main/map_merge/package.xml")
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)

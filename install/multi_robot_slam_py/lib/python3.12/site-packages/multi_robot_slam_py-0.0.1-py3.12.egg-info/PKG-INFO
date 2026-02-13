@@ -1,7 +1,0 @@
-Metadata-Version: 2.1
-Name: multi-robot-slam-py
-Version: 0.0.1
-Summary: Multi-robot SLAM Python nodes for ROS2 Jazzy
-Maintainer: Your Name
-Maintainer-email: your@email.com
-License: Apache-2.0

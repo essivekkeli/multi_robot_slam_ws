@@ -1,1 +1,1 @@
-rclcpp;std_msgs;geometry_msgs;sensor_msgs;nav_msgs;tf2;tf2_ros;slam_toolbox;nav2_map_server;robot_state_publisher;xacro;ros_gz_sim;ros_gz_bridge;ament_lint_auto;ament_lint_common
+/home/aisl/Documents/multi_robot_slam_ws/build/multi_robot_slam/ament_cmake_index/share/ament_index/resource_index/package_run_dependencies/multi_robot_slam

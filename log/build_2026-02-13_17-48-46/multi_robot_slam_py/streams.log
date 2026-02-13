@@ -1,0 +1,25 @@
+[0.815s] Invoking command in '/home/aisl/Documents/multi_robot_slam_ws/build/multi_robot_slam_py': BYOBU_DATE=%Y-%m-%d DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PS1=\[\e[38;5;202m\]$(byobu_prompt_status)\[\e[00m\]$(byobu_prompt_runtime) \[\e[38;5;245m\]\u\[\e[00m\]@\[\e[38;5;172m\]\h\[\e[00m\]:\[\e[38;5;5m\]\w\[\e[00m\]$(byobu_prompt_symbol) PYTHONPATH=/home/aisl/Documents/multi_robot_slam_ws/build/multi_robot_slam_py/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam_py/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/aisl/Documents/multi_robot_slam_ws/build/multi_robot_slam_py/build --no-deps symlink_data
+[1.086s] running develop
+[1.296s] running egg_info
+[1.296s] creating multi_robot_slam_py.egg-info
+[1.318s] writing multi_robot_slam_py.egg-info/PKG-INFO
+[1.318s] writing dependency_links to multi_robot_slam_py.egg-info/dependency_links.txt
+[1.319s] writing entry points to multi_robot_slam_py.egg-info/entry_points.txt
+[1.319s] writing requirements to multi_robot_slam_py.egg-info/requires.txt
+[1.319s] writing top-level names to multi_robot_slam_py.egg-info/top_level.txt
+[1.319s] writing manifest file 'multi_robot_slam_py.egg-info/SOURCES.txt'
+[1.364s] reading manifest file 'multi_robot_slam_py.egg-info/SOURCES.txt'
+[1.364s] writing manifest file 'multi_robot_slam_py.egg-info/SOURCES.txt'
+[1.387s] running build_ext
+[1.387s] Creating /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam_py/lib/python3.12/site-packages/multi-robot-slam-py.egg-link (link to .)
+[1.388s] Installing central_server script to /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam_py/lib/multi_robot_slam_py
+[1.388s] Installing smooth_circle script to /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam_py/lib/multi_robot_slam_py
+[1.388s] 
+[1.388s] Installed /home/aisl/Documents/multi_robot_slam_ws/build/multi_robot_slam_py
+[1.388s] running symlink_data
+[1.388s] creating /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam_py/share/ament_index
+[1.388s] creating /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam_py/share/ament_index/resource_index
+[1.388s] creating /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam_py/share/ament_index/resource_index/packages
+[1.388s] symbolically linking /home/aisl/Documents/multi_robot_slam_ws/build/multi_robot_slam_py/resource/multi_robot_slam_py -> /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam_py/share/ament_index/resource_index/packages
+[1.388s] symbolically linking /home/aisl/Documents/multi_robot_slam_ws/build/multi_robot_slam_py/package.xml -> /home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam_py/share/multi_robot_slam_py
+[1.418s] Invoked command in '/home/aisl/Documents/multi_robot_slam_ws/build/multi_robot_slam_py' returned '0': BYOBU_DATE=%Y-%m-%d DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PS1=\[\e[38;5;202m\]$(byobu_prompt_status)\[\e[00m\]$(byobu_prompt_runtime) \[\e[38;5;245m\]\u\[\e[00m\]@\[\e[38;5;172m\]\h\[\e[00m\]:\[\e[38;5;5m\]\w\[\e[00m\]$(byobu_prompt_symbol) PYTHONPATH=/home/aisl/Documents/multi_robot_slam_ws/build/multi_robot_slam_py/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/aisl/Documents/multi_robot_slam_ws/install/multi_robot_slam_py/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/aisl/Documents/multi_robot_slam_ws/build/multi_robot_slam_py/build --no-deps symlink_data

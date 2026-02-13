@@ -29,7 +29,10 @@ class OdomToTF(Node):
     def odom_callback(self, msg):
         # Create transform from odom message
         t = TransformStamped()
-        t.header = msg.header
+        
+        # USE THE ODOMETRY MESSAGE'S TIMESTAMP (not current time!)
+        t.header.stamp = msg.header.stamp
+        t.header.frame_id = msg.header.frame_id
         t.child_frame_id = msg.child_frame_id
         
         t.transform.translation.x = msg.pose.pose.position.x
