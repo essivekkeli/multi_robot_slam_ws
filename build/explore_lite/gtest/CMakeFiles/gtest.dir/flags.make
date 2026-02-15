@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/home/aisl/Documents/multi_robot_slam_ws/src/m-explore-ros2/m-explore-ros2-main/explore/include -I/opt/ros/jazzy/src/gtest_vendor/. -isystem /opt/ros/jazzy/src/gtest_vendor/include
+CXX_INCLUDES = -I/home/essivekkeli/multi_robot_slam_ws/src/m-explore-ros2/m-explore-ros2-main/explore/include -I/opt/ros/jazzy/src/gtest_vendor/. -isystem /opt/ros/jazzy/src/gtest_vendor/include
 
 CXX_FLAGS = -std=gnu++14 -fPIC -Wno-missing-field-initializers -Wall -Wextra -Wpedantic -Wno-null-dereference
 

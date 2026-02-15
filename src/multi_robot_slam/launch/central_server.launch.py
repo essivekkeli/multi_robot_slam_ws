@@ -119,7 +119,7 @@ class CentralServer(Node):
         first_map = list(self.robot_maps.values())[0]
         merged = OccupancyGrid()
         merged.header.stamp = self.get_clock().now().to_msg()
-        merged.header.frame_id = 'map'
+        merged.header.frame_id = 'world'
         merged.info = first_map.info
         
         # Initialize with unknown

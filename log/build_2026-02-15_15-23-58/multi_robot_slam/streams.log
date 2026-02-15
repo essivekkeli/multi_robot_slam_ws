@@ -1,0 +1,81 @@
+[0.022s] Invoking command in '/home/essivekkeli/multi_robot_slam_ws/build/multi_robot_slam': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam_py:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/essivekkeli/multi_robot_slam_ws/src/multi_robot_slam -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam
+[0.323s] -- The C compiler identification is GNU 13.3.0
+[0.323s] -- The CXX compiler identification is GNU 13.3.0
+[0.323s] -- Detecting C compiler ABI info
+[0.323s] -- Detecting C compiler ABI info - done
+[0.323s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.324s] -- Detecting C compile features
+[0.324s] -- Detecting C compile features - done
+[0.324s] -- Detecting CXX compiler ABI info
+[0.469s] -- Detecting CXX compiler ABI info - done
+[0.482s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.483s] -- Detecting CXX compile features
+[0.484s] -- Detecting CXX compile features - done
+[0.489s] -- Found ament_cmake: 2.5.4 (/opt/ros/jazzy/share/ament_cmake/cmake)
+[0.706s] -- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter 
+[0.798s] -- Override CMake install command with custom implementation using symlinks instead of copying resources
+[0.870s] -- Found rclcpp: 28.1.13 (/opt/ros/jazzy/share/rclcpp/cmake)
+[0.939s] -- Found rosidl_generator_c: 4.6.6 (/opt/ros/jazzy/share/rosidl_generator_c/cmake)
+[0.964s] -- Found rosidl_generator_cpp: 4.6.6 (/opt/ros/jazzy/share/rosidl_generator_cpp/cmake)
+[0.992s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[1.023s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[1.148s] -- Found rmw_implementation_cmake: 7.3.2 (/opt/ros/jazzy/share/rmw_implementation_cmake/cmake)
+[1.153s] -- Found rmw_fastrtps_cpp: 8.4.3 (/opt/ros/jazzy/share/rmw_fastrtps_cpp/cmake)
+[1.281s] -- Found OpenSSL: /usr/lib/x86_64-linux-gnu/libcrypto.so (found version "3.0.13")  
+[1.323s] -- Found FastRTPS: /opt/ros/jazzy/include (Required is at least version "2.13") 
+[1.362s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[1.473s] -- Found std_msgs: 5.3.6 (/opt/ros/jazzy/share/std_msgs/cmake)
+[1.495s] -- Found geometry_msgs: 5.3.6 (/opt/ros/jazzy/share/geometry_msgs/cmake)
+[1.521s] -- Found sensor_msgs: 5.3.6 (/opt/ros/jazzy/share/sensor_msgs/cmake)
+[1.569s] -- Found nav_msgs: 5.3.6 (/opt/ros/jazzy/share/nav_msgs/cmake)
+[1.632s] -- Found tf2: 0.36.16 (/opt/ros/jazzy/share/tf2/cmake)
+[1.647s] -- Found tf2_ros: 0.36.16 (/opt/ros/jazzy/share/tf2_ros/cmake)
+[1.965s] -- Found ament_lint_auto: 0.17.3 (/opt/ros/jazzy/share/ament_lint_auto/cmake)
+[2.203s] -- Added test 'copyright' to check source files copyright and LICENSE
+[2.210s] -- Added test 'flake8' to check Python code syntax and style conventions
+[2.211s] -- Configured 'flake8' exclude dirs and/or files: 
+[2.213s] -- Added test 'lint_cmake' to check CMake code style
+[2.215s] -- Added test 'pep257' to check Python code against some of the docstring style conventions in PEP 257
+[2.220s] -- Added test 'xmllint' to check XML markup files
+[2.225s] -- Configuring done (2.2s)
+[2.235s] -- Generating done (0.0s)
+[2.242s] -- Build files have been written to: /home/essivekkeli/multi_robot_slam_ws/build/multi_robot_slam
+[2.262s] Invoked command in '/home/essivekkeli/multi_robot_slam_ws/build/multi_robot_slam' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam_py:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/essivekkeli/multi_robot_slam_ws/src/multi_robot_slam -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam
+[2.264s] Invoking command in '/home/essivekkeli/multi_robot_slam_ws/build/multi_robot_slam': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam_py:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/essivekkeli/multi_robot_slam_ws/build/multi_robot_slam -- -j8 -l8
+[2.318s] Invoked command in '/home/essivekkeli/multi_robot_slam_ws/build/multi_robot_slam' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam_py:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/essivekkeli/multi_robot_slam_ws/build/multi_robot_slam -- -j8 -l8
+[2.331s] Invoking command in '/home/essivekkeli/multi_robot_slam_ws/build/multi_robot_slam': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam_py:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /home/essivekkeli/multi_robot_slam_ws/build/multi_robot_slam
+[2.341s] -- Install configuration: ""
+[2.341s] -- Execute custom install script
+[2.342s] -- Symlinking: /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//launch/central_server.launch.py
+[2.353s] -- Symlinking: /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//launch/full_system.launch.py
+[2.367s] -- Symlinking: /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//launch/gz_multi_robot.launch.py
+[2.380s] -- Symlinking: /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//launch/multi_robot_slam.launch.py
+[2.393s] -- Symlinking: /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//launch/single_robot_slam.launch.py
+[2.404s] -- Symlinking: /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//config/multi_robot_params.yaml
+[2.415s] -- Symlinking: /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//config/multi_robot_slam.yaml
+[2.425s] -- Symlinking: /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//config/robots.yaml
+[2.436s] -- Symlinking: /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//config/rviz_config.rviz
+[2.447s] -- Symlinking: /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//config/slam_params.yaml
+[2.458s] -- Symlinking: /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//worlds/multi_robot_world.sdf
+[2.468s] -- Symlinking: /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//urdf/robot.urdf.xacro
+[2.479s] -- Symlinking: /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//scripts/odom_to_tf.py
+[2.490s] -- Symlinking: /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//scripts/scan_frame_fixer.py
+[2.501s] -- Symlinking: /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam//scripts/smooth_circle.py
+[2.513s] -- Symlinking: /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam/lib/multi_robot_slam/odom_to_tf.py
+[2.523s] -- Symlinking: /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam/lib/multi_robot_slam/scan_frame_fixer.py
+[2.533s] -- Symlinking: /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam/share/ament_index/resource_index/package_run_dependencies/multi_robot_slam
+[2.544s] -- Symlinking: /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam/share/ament_index/resource_index/parent_prefix_path/multi_robot_slam
+[2.558s] -- Symlinking: /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam/environment/ament_prefix_path.sh
+[2.570s] -- Symlinking: /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam/environment/ament_prefix_path.dsv
+[2.580s] -- Symlinking: /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam/environment/path.sh
+[2.591s] -- Symlinking: /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam/environment/path.dsv
+[2.603s] -- Symlinking: /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam/local_setup.bash
+[2.614s] -- Symlinking: /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam/local_setup.sh
+[2.628s] -- Symlinking: /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam/local_setup.zsh
+[2.640s] -- Symlinking: /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam/local_setup.dsv
+[2.651s] -- Symlinking: /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam/package.dsv
+[2.662s] -- Symlinking: /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam/share/ament_index/resource_index/packages/multi_robot_slam
+[2.673s] -- Symlinking: /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam/cmake/multi_robot_slamConfig.cmake
+[2.685s] -- Symlinking: /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam/cmake/multi_robot_slamConfig-version.cmake
+[2.701s] -- Symlinking: /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam/share/multi_robot_slam/package.xml
+[2.716s] Invoked command in '/home/essivekkeli/multi_robot_slam_ws/build/multi_robot_slam' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam_py:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /home/essivekkeli/multi_robot_slam_ws/build/multi_robot_slam

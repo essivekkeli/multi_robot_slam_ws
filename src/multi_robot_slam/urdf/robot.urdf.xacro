@@ -85,7 +85,7 @@
       <pose>0 0 0 0 0 0</pose>
       <frame_name>$(arg robot_name)/lidar</frame_name>
       <topic>$(arg robot_name)/scan</topic>
-      <update_rate>10</update_rate>
+      <update_rate>20</update_rate>
 
       <lidar>
         <scan>
