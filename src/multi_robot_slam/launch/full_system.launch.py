@@ -26,7 +26,24 @@ def generate_launch_description():
         ]
     )
     
+    # Launch Nav2 (delayed to let SLAM initialize)
+    nav2_launch = TimerAction(
+        period=10.0,  # Wait 10 seconds total (5 more after SLAM)
+        actions=[
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(
+                    os.path.join(pkg_share, 'launch', 'multi_robot_nav2.launch.py')
+                ),
+                launch_arguments={
+                    'num_robots': '3',
+                    'use_sim_time': 'True',
+                }.items()
+            )
+        ]
+    )
+    
     return LaunchDescription([
         gazebo_launch,
-        slam_launch
+        slam_launch,
+        nav2_launch
     ])
