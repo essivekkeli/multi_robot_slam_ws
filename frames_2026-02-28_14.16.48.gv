@@ -1,0 +1,17 @@
+digraph G {
+"robot3/base_footprint" -> "robot3/base_link"[label=" Broadcaster: default_authority\nAverage rate: 10000.0\nBuffer length: 0.0\nMost recent transform: 0.0\nOldest transform: 0.0\n"];
+"robot3/odom" -> "robot3/base_footprint"[label=" Broadcaster: default_authority\nAverage rate: 51.667\nBuffer length: 0.6\nMost recent transform: 77.653\nOldest transform: 77.053\n"];
+"robot3/base_link" -> "robot3/lidar"[label=" Broadcaster: default_authority\nAverage rate: 10000.0\nBuffer length: 0.0\nMost recent transform: 0.0\nOldest transform: 0.0\n"];
+"robot2/odom" -> "robot2/base_footprint"[label=" Broadcaster: default_authority\nAverage rate: 51.667\nBuffer length: 0.6\nMost recent transform: 77.652\nOldest transform: 77.052\n"];
+"robot2/map" -> "robot2/odom"[label=" Broadcaster: default_authority\nAverage rate: 22.0\nBuffer length: 0.5\nMost recent transform: 77.8\nOldest transform: 77.3\n"];
+"robot2/base_footprint" -> "robot2/base_link"[label=" Broadcaster: default_authority\nAverage rate: 10000.0\nBuffer length: 0.0\nMost recent transform: 0.0\nOldest transform: 0.0\n"];
+"robot2/base_link" -> "robot2/lidar"[label=" Broadcaster: default_authority\nAverage rate: 10000.0\nBuffer length: 0.0\nMost recent transform: 0.0\nOldest transform: 0.0\n"];
+"world" -> "robot3/map"[label=" Broadcaster: default_authority\nAverage rate: 10000.0\nBuffer length: 0.0\nMost recent transform: 0.0\nOldest transform: 0.0\n"];
+"robot1/odom" -> "robot1/base_footprint"[label=" Broadcaster: default_authority\nAverage rate: 52.0\nBuffer length: 0.5\nMost recent transform: 77.654\nOldest transform: 77.154\n"];
+"robot1/map" -> "robot1/odom"[label=" Broadcaster: default_authority\nAverage rate: 22.5\nBuffer length: 0.4\nMost recent transform: 77.8\nOldest transform: 77.4\n"];
+"world" -> "robot2/map"[label=" Broadcaster: default_authority\nAverage rate: 10000.0\nBuffer length: 0.0\nMost recent transform: 0.0\nOldest transform: 0.0\n"];
+edge [style=invis];
+ subgraph cluster_legend { style=bold; color=black; label ="view_frames Result";
+"Recorded at time: 1772281008.4160204"[ shape=plaintext ] ;
+}->"world";
+}

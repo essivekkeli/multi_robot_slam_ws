@@ -1,0 +1,25 @@
+[1.307s] Invoking command in '/home/essivekkeli/multi_robot_slam_ws/build/multi_robot_slam_py': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTHONPATH=/home/essivekkeli/multi_robot_slam_ws/build/multi_robot_slam_py/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam_py/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/essivekkeli/multi_robot_slam_ws/build/multi_robot_slam_py/build --no-deps symlink_data
+[1.819s] running develop
+[2.191s] running egg_info
+[2.192s] creating multi_robot_slam_py.egg-info
+[2.231s] writing multi_robot_slam_py.egg-info/PKG-INFO
+[2.231s] writing dependency_links to multi_robot_slam_py.egg-info/dependency_links.txt
+[2.232s] writing entry points to multi_robot_slam_py.egg-info/entry_points.txt
+[2.232s] writing requirements to multi_robot_slam_py.egg-info/requires.txt
+[2.232s] writing top-level names to multi_robot_slam_py.egg-info/top_level.txt
+[2.232s] writing manifest file 'multi_robot_slam_py.egg-info/SOURCES.txt'
+[2.307s] reading manifest file 'multi_robot_slam_py.egg-info/SOURCES.txt'
+[2.309s] writing manifest file 'multi_robot_slam_py.egg-info/SOURCES.txt'
+[2.353s] running build_ext
+[2.353s] Creating /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam_py/lib/python3.12/site-packages/multi-robot-slam-py.egg-link (link to .)
+[2.354s] Installing central_server script to /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam_py/lib/multi_robot_slam_py
+[2.355s] Installing smooth_circle script to /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam_py/lib/multi_robot_slam_py
+[2.355s] 
+[2.355s] Installed /home/essivekkeli/multi_robot_slam_ws/build/multi_robot_slam_py
+[2.355s] running symlink_data
+[2.356s] creating /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam_py/share/ament_index
+[2.356s] creating /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam_py/share/ament_index/resource_index
+[2.356s] creating /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam_py/share/ament_index/resource_index/packages
+[2.356s] symbolically linking /home/essivekkeli/multi_robot_slam_ws/build/multi_robot_slam_py/resource/multi_robot_slam_py -> /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam_py/share/ament_index/resource_index/packages
+[2.356s] symbolically linking /home/essivekkeli/multi_robot_slam_ws/build/multi_robot_slam_py/package.xml -> /home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam_py/share/multi_robot_slam_py
+[2.425s] Invoked command in '/home/essivekkeli/multi_robot_slam_ws/build/multi_robot_slam_py' returned '0': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTHONPATH=/home/essivekkeli/multi_robot_slam_ws/build/multi_robot_slam_py/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/essivekkeli/multi_robot_slam_ws/install/multi_robot_slam_py/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/essivekkeli/multi_robot_slam_ws/build/multi_robot_slam_py/build --no-deps symlink_data
