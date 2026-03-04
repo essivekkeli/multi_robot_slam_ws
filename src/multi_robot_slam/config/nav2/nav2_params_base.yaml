@@ -106,7 +106,8 @@ local_costmap:
         mark_threshold: 0
         observation_sources: scan
         scan:
-          topic: scan_fixed
+          topic: scan_fixe
+          
           max_obstacle_height: 2.0
           clearing: True
           marking: True
