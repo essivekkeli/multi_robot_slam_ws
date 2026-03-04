@@ -85,13 +85,13 @@ def generate_robot_nav2_launch(context, *args, **kwargs):
                     os.path.join(nav2_launch_dir, 'navigation_launch.py')
                 ),
                 launch_arguments={
-                    'namespace': robot_name,
+                    #'namespace': robot_name,
                     'use_sim_time': use_sim_time,
                     'autostart': autostart,
                     'params_file': robot_params_file,
                     'use_lifecycle_mgr': 'true',
                     'map_subscribe_transient_local': 'true',
-                    'use_docking': 'false',
+                    #'use_docking': 'false',
                 }.items(),
             ),
         ])

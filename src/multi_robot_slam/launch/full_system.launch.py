@@ -28,7 +28,7 @@ def generate_launch_description():
     ])
 
     # 3. Nav2 per robot
-    nav2_launch = TimerAction(period=12.0, actions=[
+    nav2_launch = TimerAction(period=20.0, actions=[
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
                 os.path.join(pkg_share, 'launch', 'multi_robot_nav2.launch.py')
@@ -41,7 +41,7 @@ def generate_launch_description():
     ])
 
     # 4. Map merge
-    map_merge_launch = TimerAction(period=20.0, actions=[
+    map_merge_launch = TimerAction(period=30.0, actions=[
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
                 os.path.join(map_merge_pkg, 'launch', 'map_merge.launch.py')
@@ -50,7 +50,7 @@ def generate_launch_description():
     ])
 
     # 5. Frontier exploration — one per robot using namespace argument
-    explore_robot1 = TimerAction(period=25.0, actions=[
+    explore_robot1 = TimerAction(period=38.0, actions=[
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(explore_launch_file),
             launch_arguments={
@@ -60,7 +60,7 @@ def generate_launch_description():
         )
     ])
 
-    explore_robot2 = TimerAction(period=25.0, actions=[
+    explore_robot2 = TimerAction(period=38.0, actions=[
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(explore_launch_file),
             launch_arguments={
@@ -70,7 +70,7 @@ def generate_launch_description():
         )
     ])
 
-    explore_robot3 = TimerAction(period=25.0, actions=[
+    explore_robot3 = TimerAction(period=38.0, actions=[
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(explore_launch_file),
             launch_arguments={
