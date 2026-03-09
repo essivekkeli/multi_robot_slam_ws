@@ -57,7 +57,8 @@ collision_monitor:
     base_shift_correction: true
     cmd_vel_in_topic: cmd_vel_smoothed
     cmd_vel_out_topic: cmd_vel
-    observation_sources: scan
+    observation_sources:
+    - scan
     odom_frame_id: odom
     polygons:
     - PolygonStop
@@ -129,7 +130,7 @@ controller_server:
         cost_power: 1
         cost_weight: 3.81
         critical_cost: 300.0
-        consider_footprint: true
+        consider_footprint: false
         collision_cost: 1000000.0
         near_goal_distance: 1.0
       PathAlignCritic:

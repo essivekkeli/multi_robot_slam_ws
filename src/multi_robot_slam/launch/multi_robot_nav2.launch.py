@@ -85,7 +85,7 @@ def generate_robot_nav2_launch(context, *args, **kwargs):
                     os.path.join(get_package_share_directory('multi_robot_slam'), 'launch', 'navigation_launch_patched.py')
                 ),
                 launch_arguments={
-                    #'namespace': robot_name,
+                    'namespace': robot_name,
                     'use_sim_time': use_sim_time,
                     'autostart': autostart,
                     'params_file': robot_params_file,
