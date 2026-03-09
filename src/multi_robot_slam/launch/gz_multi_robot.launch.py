@@ -109,14 +109,18 @@ def create_robot_nodes(robot_config, urdf_file):
 
     # TF Republisher - relay individual robot TF to global /tf
     tf_republisher = Node(
-        package='topic_tools',
-        executable='relay',
+        package='ros2topic',
+        executable='ros2topic',
         name=f'{name}_tf_relay',
-        parameters=[{'use_sim_time': True}],
-        arguments=[f'/{name}/tf', '/tf'],
+        output='screen'
+    ) if False else Node(
+        package='multi_robot_slam',
+        executable='tf_relay',
+        name=f'{name}_tf_relay',
+        parameters=[{'source_topic': f'/{name}/tf', 'target_topic': '/tf', 'use_sim_time': True}],
         output='screen'
     )
-    nodes.append(tf_republisher)
+    # nodes.append(tf_republisher)  # disabled - using bridge TF instead
     
     return nodes
 
