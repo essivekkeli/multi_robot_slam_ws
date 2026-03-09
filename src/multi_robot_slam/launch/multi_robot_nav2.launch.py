@@ -82,7 +82,7 @@ def generate_robot_nav2_launch(context, *args, **kwargs):
             PushRosNamespace(robot_name),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
-                    os.path.join(nav2_launch_dir, 'navigation_launch.py')
+                    os.path.join(get_package_share_directory('multi_robot_slam'), 'launch', 'navigation_launch_patched.py')
                 ),
                 launch_arguments={
                     #'namespace': robot_name,

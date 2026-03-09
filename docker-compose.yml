@@ -4,6 +4,8 @@ services:
     container_name: multi_robot_slam
     network_mode: host
     privileged: true
+    stdin_open: true
+    tty: true
     environment:
       - DISPLAY=${DISPLAY}
       - XAUTHORITY=${XAUTHORITY}
