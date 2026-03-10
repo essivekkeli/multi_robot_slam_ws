@@ -23,3 +23,4 @@ RUN chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["bash"]
+RUN echo '<?xml version="1.0" encoding="UTF-8" ?>\n<profiles xmlns="http://www.eprosima.com/XMLSchemas/fastRTPS_Profiles">\n  <transport_descriptors>\n    <transport_descriptor>\n      <transport_id>udp_transport</transport_id>\n      <type>UDPv4</type>\n    </transport_descriptor>\n  </transport_descriptors>\n  <participant profile_name="disable_shm" is_default_profile="true">\n    <rtps>\n      <userTransports>\n        <transport_id>udp_transport</transport_id>\n      </userTransports>\n      <useBuiltinTransports>false</useBuiltinTransports>\n    </rtps>\n  </participant>\n</profiles>' > /ros2_ws/fastdds_no_shm.xml

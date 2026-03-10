@@ -52,7 +52,11 @@ def create_robot_nodes(robot_config, urdf_file):
             'use_sim_time': True,
             'robot_description': robot_desc,
             'frame_prefix': name + '/'
-        }]
+        }],
+        remappings=[
+            ('/tf', '/tf'),
+            ('/tf_static', '/tf_static'),
+        ]
     )
     nodes.append(robot_state_publisher)
     
@@ -97,11 +101,11 @@ def create_robot_nodes(robot_config, urdf_file):
             f'/{name}/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan',
             
             # TF - From Gazebo to ROS
-            f'/{name}/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V',
+            f'/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V',
         ],
         remappings=[
             # Remap model pose to robot TF topic
-            (f'/model/{name}/pose', f'/{name}/tf'),
+            (f'/model/{name}/pose', '/tf'),
         ],
         output='screen'
     )
