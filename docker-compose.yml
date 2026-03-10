@@ -10,6 +10,7 @@ services:
       - DISPLAY=${DISPLAY}
       - XAUTHORITY=${XAUTHORITY}
       - ROS_DOMAIN_ID=0
+      - FASTRTPS_DEFAULT_PROFILES_FILE=/ros2_ws/fastdds_no_shm.xml
     volumes:
       - ./src:/ros2_ws/src
       - /tmp/.X11-unix:/tmp/.X11-unix
