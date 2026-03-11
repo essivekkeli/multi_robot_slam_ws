@@ -24,6 +24,21 @@ Visualization Manager:
       Show Axes: true
       Show Names: true
       Value: true
+
+
+      # Global Merged Map 
+    - Alpha: 1.0
+      Class: rviz_default_plugins/Map
+      Color Scheme: map
+      Enabled: true
+      Name: Global Map
+      Topic:
+        Depth: 5
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /map
+      Value: true
     
     # Robot1 Map
     - Alpha: 0.7
@@ -104,7 +119,7 @@ Visualization Manager:
     # Robot3 Scan
     - Alpha: 1
       Class: rviz_default_plugins/LaserScan
-      Color: 0; 0; 255
+      Color: 0; 100; 255
       Color Transformer: FlatColor
       Enabled: true
       Name: Robot3 Scan
@@ -127,14 +142,11 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Class: rviz_default_plugins/Orbit
-      Distance: 20
-      Focal Point:
-        X: 0
-        Y: 0
-        Z: 0
-      Name: Current View
-      Pitch: 0.785
+      Class: rviz_default_plugins/TopDownOrtho
+      Near Clip Distance: 0.01
+      Scale: 35
       Target Frame: <Fixed Frame>
-      Value: Orbit (rviz_default_plugins)
-      Yaw: 0.785
+      Name: Current View
+      Value: TopDownOrtho (rviz_default_plugins)
+      X: 0
+      Y: 0
