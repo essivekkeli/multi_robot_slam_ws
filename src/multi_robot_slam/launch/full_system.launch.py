@@ -56,6 +56,7 @@ def generate_launch_description():
             launch_arguments={
                 'namespace': 'robot1',
                 'use_sim_time': 'true',
+                'robot_base_frame': 'robot1/base_footprint',
             }.items()
         )
     ])
@@ -66,6 +67,7 @@ def generate_launch_description():
             launch_arguments={
                 'namespace': 'robot2',
                 'use_sim_time': 'true',
+                'robot_base_frame': 'robot2/base_footprint',
             }.items()
         )
     ])
@@ -76,6 +78,7 @@ def generate_launch_description():
             launch_arguments={
                 'namespace': 'robot3',
                 'use_sim_time': 'true',
+                'robot_base_frame': 'robot3/base_footprint',
             }.items()
         )
     ])
@@ -85,7 +88,7 @@ def generate_launch_description():
         slam_launch,
         nav2_launch,
         map_merge_launch,
-        explore_robot1,
-        explore_robot2,
-        explore_robot3,
+        # explore_robot1,  # disabled for testing
+        # explore_robot2,  # disabled for testing
+        # explore_robot3,  # disabled for testing
     ])
