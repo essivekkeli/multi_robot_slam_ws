@@ -27,19 +27,6 @@ def generate_launch_description():
     
     # Create SLAM nodes for each robot
     slam_nodes = []
-    for name in robot_names:  # Changed from robot_name to name
-        # Create frame names immediately as strings
-        odom_frame = name + '/odom'
-        map_frame = name + '/map'
-        base_frame = name + '/base_footprint'
-        scan_topic = '/' + name + '/scan'
-        map_topic = '/' + name + '/map'
-        #
-        # 
-        # odom_topic = '/' + name + '/odom'
-        
-    # Create SLAM nodes for each robot
-    slam_nodes = []
     for name in robot_names:
         # Create frame names
         odom_frame = f'{name}/odom'
