@@ -88,7 +88,7 @@ def generate_launch_description():
         slam_launch,
         nav2_launch,
         map_merge_launch,
-        # explore_robot1,  # disabled for testing
-        # explore_robot2,  # disabled for testing
-        # explore_robot3,  # disabled for testing
+        explore_robot1,
+        explore_robot2,
+        explore_robot3,
     ])

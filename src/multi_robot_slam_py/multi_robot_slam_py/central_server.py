@@ -73,24 +73,58 @@ class CentralServer(Node):
     def simple_map_merge(self):
         if not self.robot_maps:
             return None
-        first_map = list(self.robot_maps.values())[0]
+
+        resolution = None
+        min_x = float('inf')
+        min_y = float('inf')
+        max_x = float('-inf')
+        max_y = float('-inf')
+
+        for robot_map in self.robot_maps.values():
+            info = robot_map.info
+            if resolution is None:
+                resolution = info.resolution
+            ox = info.origin.position.x
+            oy = info.origin.position.y
+            min_x = min(min_x, ox)
+            min_y = min(min_y, oy)
+            max_x = max(max_x, ox + info.width * info.resolution)
+            max_y = max(max_y, oy + info.height * info.resolution)
+
+        width  = int(np.ceil((max_x - min_x) / resolution))
+        height = int(np.ceil((max_y - min_y) / resolution))
+        merged_data = np.full(width * height, -1, dtype=np.int8)
+
+        for robot_ns, robot_map in self.robot_maps.items():
+            info = robot_map.info
+            ox = info.origin.position.x
+            oy = info.origin.position.y
+            data = np.array(robot_map.data, dtype=np.int8).reshape(info.height, info.width)
+
+            x_offset = int(round((ox - min_x) / resolution))
+            y_offset = int(round((oy - min_y) / resolution))
+
+            for row in range(info.height):
+                for col in range(info.width):
+                    gx = x_offset + col
+                    gy = y_offset + row
+                    if 0 <= gx < width and 0 <= gy < height:
+                        cell = data[row, col]
+                        idx = gy * width + gx
+                        if cell == 100:
+                            merged_data[idx] = 100
+                        elif cell == 0 and merged_data[idx] != 100:
+                            merged_data[idx] = 0
+
         merged = OccupancyGrid()
         merged.header.stamp = self.get_clock().now().to_msg()
         merged.header.frame_id = 'world'
-        merged.info = first_map.info
-        width = first_map.info.width
-        height = first_map.info.height
-        merged_data = np.full(width * height, -1, dtype=np.int8)
-        for robot_ns, robot_map in self.robot_maps.items():
-            if len(robot_map.data) != len(merged_data):
-                self.get_logger().warn(f'Map size mismatch for {robot_ns}')
-                continue
-            data = np.array(robot_map.data, dtype=np.int8)
-            for i in range(len(data)):
-                if data[i] == 100:
-                    merged_data[i] = 100
-                elif data[i] == 0 and merged_data[i] != 100:
-                    merged_data[i] = 0
+        merged.info.resolution = resolution
+        merged.info.width = width
+        merged.info.height = height
+        merged.info.origin.position.x = min_x
+        merged.info.origin.position.y = min_y
+        merged.info.origin.orientation.w = 1.0
         merged.data = merged_data.tolist()
         return merged
 
