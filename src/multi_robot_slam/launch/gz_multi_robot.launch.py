@@ -98,7 +98,7 @@ def create_robot_nodes(robot_config, urdf_file):
             f'/{name}/odom@nav_msgs/msg/Odometry[gz.msgs.Odometry',
             
             # SCAN - From Gazebo to ROS
-            f'/{name}/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan',
+            f'/{name}/points/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked',
             
             # TF - From Gazebo to ROS
             f'/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V',

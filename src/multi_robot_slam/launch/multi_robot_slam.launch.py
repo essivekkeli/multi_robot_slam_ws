@@ -33,25 +33,19 @@ def generate_launch_description():
         map_frame = f'{name}/map'
         base_frame = f'{name}/base_footprint'
         
-        # SLAM node WITHOUT namespace
+        # GLIM node per robot
+        glim_config_path = os.path.join(pkg_share, 'config', 'glim', name)
         slam_node = Node(
-            package='slam_toolbox',
-            executable='async_slam_toolbox_node',
-            name=f'{name}_slam_toolbox',  # Unique name per robot
-            # NO namespace parameter!
+            package='glim_ros',
+            executable='glim_rosnode',
+            name=f'{name}_glim',
             parameters=[
-                slam_params_file,
-                {
-                    'use_sim_time': use_sim_time,
-                    'odom_frame': odom_frame,
-                    'map_frame': map_frame,
-                    'base_frame': base_frame,
-                }
+                {'use_sim_time': use_sim_time},
+                {'config_path': glim_config_path},
             ],
             remappings=[
-                ('scan', f'/{name}/scan_fixed'),  # Absolute remapping
-                ('map', f'/{name}/map'),
-                ('map_metadata', f'/{name}/map_metadata'),
+                ('points', f'/{name}/points'),
+                ('imu', f'/{name}/imu'),
             ],
             output='screen'
         )
@@ -73,18 +67,6 @@ def generate_launch_description():
         
 
 
-        # Scan frame fixer
-        scan_fixer_node = Node(
-            package='multi_robot_slam',
-            executable='scan_frame_fixer.py',
-            name=f'{name}_scan_fixer',
-            parameters=[{
-                'use_sim_time': use_sim_time,
-                'robot_name': name
-            }],
-            output='screen'
-        )
-        slam_nodes.append(scan_fixer_node)
         
         # NO RELAY NEEDED! Each SLAM subscribes directly to its own scan_fixed
 
