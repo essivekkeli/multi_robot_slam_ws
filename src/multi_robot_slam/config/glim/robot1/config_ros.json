@@ -6,7 +6,7 @@
     "imu_time_offset": 0.0,
     "points_time_offset": 0.0,
     "acc_scale": 0.0,
-    "imu_frame_id": "",
+    "imu_frame_id": "robot1/lidar",
     "lidar_frame_id": "robot1/lidar",
     "base_frame_id": "robot1/base_footprint",
     "odom_frame_id": "robot1/odom",
