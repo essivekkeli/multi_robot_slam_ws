@@ -4,6 +4,7 @@ services:
     container_name: multi_robot_slam
     network_mode: host
     privileged: true
+    runtime: nvidia
     stdin_open: true
     tty: true
     environment:
@@ -11,6 +12,8 @@ services:
       - XAUTHORITY=${XAUTHORITY}
       - ROS_DOMAIN_ID=0
       - FASTRTPS_DEFAULT_PROFILES_FILE=/ros2_ws/fastdds_no_shm.xml
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
     volumes:
       - ./src:/ros2_ws/src
       - /tmp/.X11-unix:/tmp/.X11-unix
@@ -19,7 +22,6 @@ services:
       - ros2_install:/ros2_ws/install
     devices:
       - /dev/dri:/dev/dri
-
 volumes:
   ros2_build:
   ros2_install:
