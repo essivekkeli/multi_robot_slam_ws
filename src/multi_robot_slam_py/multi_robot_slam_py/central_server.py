@@ -6,6 +6,7 @@ by projecting points within a height band, then merges all robot maps.
 """
 import rclpy
 from rclpy.node import Node
+from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy
 from nav_msgs.msg import OccupancyGrid
 from sensor_msgs.msg import PointCloud2
 import numpy as np
@@ -37,7 +38,7 @@ def pointcloud2_to_xyz(msg):
 def pointcloud_to_occupancy_grid(xyz, resolution=0.05, z_min=0.1, z_max=1.5, frame_id="map"):
     if len(xyz) == 0:
         return None
-    mask = (xyz[:, 2] >= z_min) & (xyz[:, 2] <= z_max)
+    mask = np.ones(len(xyz), dtype=bool)
     pts2d = xyz[mask, :2]
     if len(pts2d) == 0:
         return None
@@ -80,8 +81,8 @@ class CentralServer(Node):
         self.declare_parameter("robot_namespaces", ["robot1", "robot2", "robot3"])
         self.declare_parameter("map_merge_frequency", 1.0)
         self.declare_parameter("resolution", 0.05)
-        self.declare_parameter("z_min", 0.1)
-        self.declare_parameter("z_max", 1.5)
+        self.declare_parameter("z_min", -0.3)
+        self.declare_parameter("z_max", 0.3)
         self.robot_namespaces = self.get_parameter("robot_namespaces").value
         self.merge_frequency  = self.get_parameter("map_merge_frequency").value
         self.resolution       = self.get_parameter("resolution").value
@@ -89,14 +90,15 @@ class CentralServer(Node):
         self.z_max            = self.get_parameter("z_max").value
         self.robot_maps = {}
         self.lock = threading.Lock()
-        self.global_map_pub = self.create_publisher(OccupancyGrid, "/global_map", 10)
+        qos = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL, reliability=ReliabilityPolicy.RELIABLE)
+        self.global_map_pub = self.create_publisher(OccupancyGrid, "/global_map", qos)
         self.robot_map_pubs = {}
         for name in self.robot_namespaces:
-            self.robot_map_pubs[name] = self.create_publisher(OccupancyGrid, f"/{name}/map", 10)
+            self.robot_map_pubs[name] = self.create_publisher(OccupancyGrid, f"/{name}/map", qos)
         for name in self.robot_namespaces:
-            self.create_subscription(PointCloud2, f"/{name}/glim/map",
+            self.create_subscription(PointCloud2, f"/{name}/glim/aligned_points",
                 lambda msg, n=name: self.glim_map_callback(msg, n), 10)
-            self.get_logger().info(f"Subscribed to /{name}/glim/map")
+            self.get_logger().info(f"Subscribed to /{name}/glim/aligned_points")
         self.merge_timer = self.create_timer(1.0 / self.merge_frequency, self.merge_and_publish)
         self.get_logger().info("Central Server (baseline fusion) started")
 
