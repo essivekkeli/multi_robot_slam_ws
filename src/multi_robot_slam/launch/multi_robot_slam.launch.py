@@ -46,6 +46,9 @@ def generate_launch_description():
             remappings=[
                 ('points', f'/{name}/points'),
                 ('imu', f'/{name}/imu'),
+                ('/glim_ros/map', f'/{name}/glim/map'),
+                ('/glim_ros/odom', f'/{name}/glim/odom'),
+                ('/glim_ros/aligned_points', f'/{name}/glim/aligned_points'),
             ],
             output='screen'
         )
