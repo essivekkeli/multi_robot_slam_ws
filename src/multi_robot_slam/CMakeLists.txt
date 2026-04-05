@@ -33,6 +33,7 @@ endif()
 install(PROGRAMS
   scripts/odom_to_tf.py
   scripts/scan_frame_fixer.py
+  scripts/imu_relay.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

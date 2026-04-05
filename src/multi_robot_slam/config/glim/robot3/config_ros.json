@@ -6,22 +6,22 @@
     "imu_time_offset": 0.0,
     "points_time_offset": 0.0,
     "acc_scale": 0.0,
-    "imu_frame_id": "robot3/lidar",
+    "imu_frame_id": "robot3/imu_link",
     "lidar_frame_id": "robot3/lidar",
     "base_frame_id": "robot3/base_footprint",
     "odom_frame_id": "robot3/odom",
     "map_frame_id": "robot3/map",
-    "publish_imu2lidar": false,
+    "publish_imu2lidar": true,
     "tf_time_offset": 1e-06,
     "extension_modules": [
       "libstandard_viewer.so",
       "librviz_viewer.so"
     ],
-    "imu_topic": "/robot3/imu",
+    "imu_topic": "/robot3/imu/best_effort",
     "points_topic": "/robot3/points/points",
     "image_topic": "/image",
     "imu_qos": {
-      "profile": "sensor_data",
+      "profile": "services_default",
       "depth": 1000
     },
     "points_qos": {

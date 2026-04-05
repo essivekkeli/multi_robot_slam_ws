@@ -99,6 +99,7 @@ def create_robot_nodes(robot_config, urdf_file):
             
             # SCAN - From Gazebo to ROS
             f'/{name}/points/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked',
+            f'/{name}/imu@sensor_msgs/msg/Imu[gz.msgs.IMU',
             
             # TF - From Gazebo to ROS
             f'/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V',

@@ -75,7 +75,7 @@
   <joint name="lidar_joint" type="fixed">
     <parent link="base_link"/>
     <child link="lidar"/>
-    <origin xyz="0 0 0.08" rpy="0 0 0"/>
+    <origin xyz="0 0 0.4" rpy="0 0 0"/>
   </joint>
 
   <!-- ================= GAZEBO LIDAR ================= -->
@@ -98,8 +98,8 @@
           <vertical>
             <samples>16</samples>
             <resolution>1.0</resolution>
-            <min_angle>-0.26180</min_angle>
-            <max_angle>0.26180</max_angle>
+            <min_angle>-0.5236</min_angle>
+            <max_angle>0.5236</max_angle>
           </vertical>
         </scan>
         <range>
@@ -114,6 +114,41 @@
     </sensor>
   </gazebo>
 
+
+  <!-- ================= IMU ================= -->
+  <link name="imu_link">
+    <visual>
+      <geometry><box size="0.01 0.01 0.01"/></geometry>
+    </visual>
+  </link>
+
+  <joint name="imu_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="imu_link"/>
+    <origin xyz="0 0 0.05" rpy="0 0 0"/>
+  </joint>
+
+  <gazebo reference="imu_link">
+    <sensor name="imu" type="imu">
+      <always_on>true</always_on>
+      <update_rate>100</update_rate>
+      <topic>$(arg robot_name)/imu</topic>
+      <frame_name>$(arg robot_name)/imu_link</frame_name>
+      <imu>
+        <angular_velocity>
+          <x><noise type="gaussian"><mean>0</mean><stddev>0.009</stddev></noise></x>
+          <y><noise type="gaussian"><mean>0</mean><stddev>0.009</stddev></noise></y>
+          <z><noise type="gaussian"><mean>0</mean><stddev>0.009</stddev></noise></z>
+        </angular_velocity>
+        <linear_acceleration>
+          <x><noise type="gaussian"><mean>0</mean><stddev>0.021</stddev></noise></x>
+          <y><noise type="gaussian"><mean>0</mean><stddev>0.021</stddev></noise></y>
+          <z><noise type="gaussian"><mean>0</mean><stddev>0.021</stddev></noise></z>
+        </linear_acceleration>
+      </imu>
+      <plugin filename="gz-sim-imu-system" name="gz::sim::systems::Imu"/>
+    </sensor>
+  </gazebo>
   <!-- ================= DIFF DRIVE (MULTI-ROBOT SAFE) ================= -->
 
   <gazebo>
