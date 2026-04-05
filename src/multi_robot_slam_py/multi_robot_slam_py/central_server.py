@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 """
-Central Server — Baseline Map Fusion (Stage 3a, Method 1)
-Accumulates GLIM aligned_points over time per robot, then projects
-the accumulated 3D point cloud to a 2D OccupancyGrid.
+Central Server — Stage 3a Week 1: TF-based world frame fusion
+Accumulates GLIM aligned_points per robot, transforms to world frame
+using TF, then projects accumulated 3D cloud to 2D OccupancyGrid.
 """
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy
 from nav_msgs.msg import OccupancyGrid
 from sensor_msgs.msg import PointCloud2
+from tf2_ros import Buffer, TransformListener, LookupException, ConnectivityException, ExtrapolationException
+from tf2_sensor_msgs.tf2_sensor_msgs import do_transform_cloud
 import numpy as np
 import struct
 import threading
@@ -34,21 +36,18 @@ def pointcloud2_to_xyz(msg):
     return xyz[valid]
 
 
-def accumulated_cloud_to_occupancy_grid(xyz, resolution=0.05, z_min=0.1, z_max=2.5, frame_id="map"):
+def accumulated_cloud_to_occupancy_grid(xyz, resolution=0.05, z_min=0.1, z_max=2.5, frame_id="world"):
     if len(xyz) == 0:
         return None
 
-    # Filter by height band — obstacles/walls only
     mask = (xyz[:, 2] >= z_min) & (xyz[:, 2] <= z_max)
     pts2d = xyz[mask, :2]
     if len(pts2d) == 0:
         return None
 
-    # Floor points — mark as free space
     floor_mask = (xyz[:, 2] >= -0.5) & (xyz[:, 2] < z_min)
     floor_pts = xyz[floor_mask, :2]
 
-    # Grid bounds
     all_pts = np.vstack([pts2d, floor_pts]) if len(floor_pts) > 0 else pts2d
     min_x = all_pts[:, 0].min() - 1.0
     min_y = all_pts[:, 1].min() - 1.0
@@ -59,14 +58,12 @@ def accumulated_cloud_to_occupancy_grid(xyz, resolution=0.05, z_min=0.1, z_max=2
 
     grid = np.full((height, width), -1, dtype=np.int8)
 
-    # Mark free space from floor points
     if len(floor_pts) > 0:
         gx = ((floor_pts[:, 0] - min_x) / resolution).astype(int)
         gy = ((floor_pts[:, 1] - min_y) / resolution).astype(int)
         valid = (gx >= 0) & (gx < width) & (gy >= 0) & (gy < height)
         grid[gy[valid], gx[valid]] = 0
 
-    # Mark obstacles from wall/object points
     gx = ((pts2d[:, 0] - min_x) / resolution).astype(int)
     gy = ((pts2d[:, 1] - min_y) / resolution).astype(int)
     valid = (gx >= 0) & (gx < width) & (gy >= 0) & (gy < height)
@@ -82,6 +79,12 @@ def accumulated_cloud_to_occupancy_grid(xyz, resolution=0.05, z_min=0.1, z_max=2
     msg.header.frame_id = frame_id
     msg.data = grid.flatten().tolist()
     return msg
+
+
+def _voxel_downsample(xyz, voxel_size=0.05):
+    voxels = np.floor(xyz / voxel_size).astype(int)
+    _, unique_idx = np.unique(voxels, axis=0, return_index=True)
+    return xyz[unique_idx]
 
 
 class CentralServer(Node):
@@ -101,10 +104,15 @@ class CentralServer(Node):
         self.z_max            = self.get_parameter("z_max").value
         self.max_points       = self.get_parameter("max_points_per_robot").value
 
-        # Accumulated point clouds per robot
+        # TF buffer and listener
+        self.tf_buffer   = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)
+
+        # Accumulated point clouds in world frame per robot
         self.robot_clouds = {name: np.zeros((0, 3), dtype=np.float32)
                              for name in self.robot_namespaces}
         self.robot_maps = {}
+        self.global_cloud = np.zeros((0, 3), dtype=np.float32)
         self.lock = threading.Lock()
 
         qos = QoSProfile(depth=1,
@@ -125,31 +133,40 @@ class CentralServer(Node):
 
         self.merge_timer = self.create_timer(
             1.0 / self.merge_frequency, self.merge_and_publish)
-        self.get_logger().info("Central Server (accumulated fusion) started")
+        self.get_logger().info("Central Server (TF-based world frame fusion) started")
 
     def pointcloud_callback(self, msg, robot_ns):
-        xyz = pointcloud2_to_xyz(msg)
+        # Transform point cloud to world frame using TF
+        try:
+            transform = self.tf_buffer.lookup_transform(
+                'world',
+                msg.header.frame_id,
+                rclpy.time.Time(),
+                timeout=rclpy.duration.Duration(seconds=0.1))
+            msg_world = do_transform_cloud(msg, transform)
+        except (LookupException, ConnectivityException, ExtrapolationException) as e:
+            # Fall back to robot map frame if world TF not available
+            self.get_logger().warn(f"TF lookup failed for {robot_ns}: {e}", throttle_duration_sec=5.0)
+            msg_world = msg
+
+        xyz = pointcloud2_to_xyz(msg_world)
         if len(xyz) == 0:
             return
 
         with self.lock:
-            # Accumulate new points
             current = self.robot_clouds[robot_ns]
             combined = np.vstack([current, xyz]) if len(current) > 0 else xyz
-
-            # Downsample if exceeding max points using voxel grid
             if len(combined) > self.max_points:
-                combined = self._voxel_downsample(combined, voxel_size=0.05)
-
+                combined = _voxel_downsample(combined, voxel_size=0.05)
             self.robot_clouds[robot_ns] = combined
 
-        # Build occupancy grid from accumulated cloud
+        # Per-robot map in world frame
         occ = accumulated_cloud_to_occupancy_grid(
             combined,
             resolution=self.resolution,
             z_min=self.z_min,
             z_max=self.z_max,
-            frame_id=f"{robot_ns}/map")
+            frame_id='world')
 
         if occ is None:
             return
@@ -158,12 +175,6 @@ class CentralServer(Node):
         with self.lock:
             self.robot_maps[robot_ns] = occ
         self.robot_map_pubs[robot_ns].publish(occ)
-
-    def _voxel_downsample(self, xyz, voxel_size=0.05):
-        """Simple voxel grid downsampling — keep one point per voxel."""
-        voxels = np.floor(xyz / voxel_size).astype(int)
-        _, unique_idx = np.unique(voxels, axis=0, return_index=True)
-        return xyz[unique_idx]
 
     def merge_and_publish(self):
         with self.lock:

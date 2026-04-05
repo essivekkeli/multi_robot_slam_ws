@@ -182,7 +182,15 @@ def generate_launch_description():
     )
     
     # Create world frame broadcasters for ALL robots
-    world_broadcasters = create_world_frame_broadcasters(robots_config)
+    world_broadcasters = [
+        Node(
+            package='multi_robot_slam',
+            executable='world_tf_broadcaster.py',
+            name='world_tf_broadcaster',
+            output='screen',
+            parameters=[{'use_sim_time': True}]
+        )
+    ]
     
     # Create nodes for all robots
     robot_nodes = []
