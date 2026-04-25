@@ -39,3 +39,9 @@ install(PROGRAMS
 )
 
 ament_package()
+# Experiment scripts
+install(PROGRAMS
+  scripts/drive_robots.py
+  scripts/save_results.py
+  DESTINATION lib/${PROJECT_NAME}
+)

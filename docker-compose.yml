@@ -4,7 +4,7 @@ services:
     container_name: multi_robot_slam
     network_mode: host
     privileged: true
-    runtime: nvidia
+    gpus: all
     stdin_open: true
     tty: true
     environment:
@@ -20,8 +20,6 @@ services:
       - ${XAUTHORITY}:/root/.Xauthority
       - ros2_build:/ros2_ws/build
       - ros2_install:/ros2_ws/install
-    devices:
-      - /dev/dri:/dev/dri
 volumes:
   ros2_build:
   ros2_install:
