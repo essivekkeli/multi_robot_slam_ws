@@ -9,7 +9,7 @@
     "so_name": "libodometry_estimation_cpu.so",
     // Initialization params
     "initialization_mode": "LOOSE",
-    "initialization_window_size": 3.0,
+    "initialization_window_size": 10.0,
     "init_pose_damping_scale": 1e10,
     // Optimizer params
     "smoother_lag": 5.0,
