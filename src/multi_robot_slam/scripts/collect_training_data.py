@@ -3,12 +3,14 @@ import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy
 from nav_msgs.msg import OccupancyGrid
+from std_msgs.msg import String
 import numpy as np
-import json, os, glob
+import json, os, glob, time
 from datetime import datetime
 
-SAMPLE_DIR = "/ros2_ws/results/gnn/samples"
-ROBOTS     = ["robot1", "robot2", "robot3"]
+SAMPLE_DIR    = "/ros2_ws/results/gnn/samples"
+ROBOTS        = ["robot1", "robot2", "robot3"]
+SAVE_COOLDOWN = 60.0   # minimum seconds between saves — prevents duplicates
 
 def next_sample_id(base_dir):
     existing = sorted(glob.glob(os.path.join(base_dir, "sample_*")))
@@ -36,9 +38,11 @@ class TrainingDataCollector(Node):
     def __init__(self):
         super().__init__("training_data_collector")
         os.makedirs(SAMPLE_DIR, exist_ok=True)
-        self.latest_maps = {r: None for r in ROBOTS}
-        self.latest_meta = {r: None for r in ROBOTS}
-        self.saved_count = 0
+        self.latest_maps    = {r: None for r in ROBOTS}
+        self.latest_meta    = {r: None for r in ROBOTS}
+        self.saved_count    = 0
+        self.last_save_time = 0.0
+
         qos = QoSProfile(depth=1,
                          durability=DurabilityPolicy.TRANSIENT_LOCAL,
                          reliability=ReliabilityPolicy.RELIABLE)
@@ -46,11 +50,16 @@ class TrainingDataCollector(Node):
             self.create_subscription(OccupancyGrid, f"/{robot}/map",
                 lambda msg, r=robot: self._map_cb(msg, r), qos)
             self.get_logger().info(f"Subscribed to /{robot}/map")
-        self.create_timer(10.0, self._check_ready)
-        self.get_logger().info(f"Collector ready — press Ctrl+C when drive is complete to save sample")
+
+        self.create_subscription(String, "/save_sample",
+            self._save_trigger_cb, 10)
+        self.create_timer(30.0, self._status_log)
+        self.get_logger().info(
+            f"Collector ready. SAVE_COOLDOWN={SAVE_COOLDOWN}s")
 
     def _map_cb(self, msg, robot):
-        data = np.array(msg.data, dtype=np.int8).reshape(msg.info.height, msg.info.width)
+        data = np.array(msg.data, dtype=np.int8).reshape(
+            msg.info.height, msg.info.width)
         self.latest_maps[robot] = data
         self.latest_meta[robot] = {
             "resolution": msg.info.resolution,
@@ -60,18 +69,29 @@ class TrainingDataCollector(Node):
             "height":     msg.info.height,
         }
 
-    def _check_ready(self):
+    def _save_trigger_cb(self, msg):
+        now = time.time()
+        since_last = now - self.last_save_time
+        if since_last < SAVE_COOLDOWN:
+            self.get_logger().warn(
+                f"Save trigger ignored — cooldown {since_last:.0f}s "
+                f"< {SAVE_COOLDOWN}s")
+            return
+        self.get_logger().info(f"Save trigger received: '{msg.data}'")
+        self.save_sample(label=msg.data)
+
+    def _status_log(self):
         ready = [r for r in ROBOTS if self.latest_maps[r] is not None]
         occ   = {r: int(np.sum(self.latest_maps[r]==100))
                  for r in ready}
         self.get_logger().info(
-            f"Maps ready: {ready}  occupied={occ}",
+            f"Maps: {ready}  occ={occ}  saved={self.saved_count}",
             throttle_duration_sec=30.0)
 
-    def save_sample(self):
+    def save_sample(self, label="manual"):
         if not all(self.latest_maps[r] is not None for r in ROBOTS):
             self.get_logger().warn("Not all maps available — skipping")
-            return
+            return None
         sample_id  = next_sample_id(SAMPLE_DIR)
         sample_dir = os.path.join(SAMPLE_DIR, f"sample_{sample_id}")
         os.makedirs(sample_dir, exist_ok=True)
@@ -81,6 +101,7 @@ class TrainingDataCollector(Node):
         meta = {
             "sample_id":      sample_id,
             "timestamp":      datetime.now().isoformat(),
+            "label":          label,
             "resolution":     0.05,
             "icp_fitness":    load_latest_icp_fitness(),
             "map_info":       {r: self.latest_meta[r] for r in ROBOTS
@@ -90,10 +111,12 @@ class TrainingDataCollector(Node):
             "free_cells":     {r: int(np.sum(self.latest_maps[r]==0))
                                for r in ROBOTS},
         }
-        json.dump(meta, open(os.path.join(sample_dir,"meta.json"),"w"), indent=2)
-        self.saved_count += 1
+        json.dump(meta, open(os.path.join(sample_dir,"meta.json"),"w"),
+                  indent=2)
+        self.saved_count    += 1
+        self.last_save_time  = time.time()
         self.get_logger().info(
-            f"Saved sample_{sample_id} -> {sample_dir}  "
+            f"Saved sample_{sample_id}  total={self.saved_count}  "
             f"occ={[meta['occupied_cells'][r] for r in ROBOTS]}")
         return sample_dir
 
@@ -103,8 +126,8 @@ def main(args=None):
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
-        node.get_logger().info("Ctrl+C — saving final sample...")
-        node.save_sample()
+        node.get_logger().info("Shutdown — saving final sample")
+        node.save_sample(label="shutdown")
     finally:
         node.destroy_node()
         try: rclpy.shutdown()
