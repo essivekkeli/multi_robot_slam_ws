@@ -8,8 +8,15 @@ from datetime import datetime
 
 
 def find_metrics_dir(method):
+    import os
     pattern = f"/tmp/fusion_metrics/{method}_*"
-    matches = sorted(glob.glob(pattern))
+    matches = glob.glob(pattern)
+    # Filter exact prefix matches only (e.g. 'icp_' should not match 'icp_probabilistic_')
+    matches = [m for m in matches
+               if os.path.basename(m).startswith(method + '_')
+               and not any(os.path.basename(m).startswith(method + '_' + suffix)
+                           for suffix in ['probabilistic', 'gnn'])]
+    matches = sorted(matches)
     if not matches:
         raise FileNotFoundError(f"No metrics found for method '{method}'")
     return matches[-1]
@@ -113,7 +120,7 @@ TODO (do manually):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--method", required=True,
-                        choices=["baseline_tf", "icp", "probabilistic", "gnn"])
+                        choices=["baseline_tf", "icp", "probabilistic", "gnn", "icp_probabilistic", "gnn_probabilistic", "icp_gnn"])
     parser.add_argument("--run", default="001")
     parser.add_argument("--notes", default="")
     args = parser.parse_args()

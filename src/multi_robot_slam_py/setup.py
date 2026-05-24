@@ -23,6 +23,7 @@ setup(
     entry_points={
         'console_scripts': [
             'central_server = multi_robot_slam_py.central_server:main',
+            'central_server_unified = multi_robot_slam_py.central_server_unified:main',
             'smooth_circle = scripts.smooth_circle:main',
         ],
     },

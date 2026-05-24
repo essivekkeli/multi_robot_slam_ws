@@ -37,14 +37,14 @@ Visualization Manager:
         Durability Policy: Transient Local
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /map
+        Value: /global_map
       Value: true
     
     # Robot1 Map
     - Alpha: 0.7
       Class: rviz_default_plugins/Map
       Color Scheme: map
-      Enabled: true
+      Enabled: false
       Name: Robot1 Map
       Topic:
         Depth: 5
@@ -58,7 +58,7 @@ Visualization Manager:
     - Alpha: 0.7
       Class: rviz_default_plugins/Map
       Color Scheme: map
-      Enabled: true
+      Enabled: false
       Name: Robot2 Map
       Topic:
         Depth: 5
@@ -72,7 +72,7 @@ Visualization Manager:
     - Alpha: 0.7
       Class: rviz_default_plugins/Map
       Color Scheme: map
-      Enabled: true
+      Enabled: false
       Name: Robot3 Map
       Topic:
         Depth: 5
@@ -87,7 +87,7 @@ Visualization Manager:
       Class: rviz_default_plugins/LaserScan
       Color: 255; 0; 0
       Color Transformer: FlatColor
-      Enabled: true
+      Enabled: false
       Name: Robot1 Scan
       Size (m): 0.05
       Style: Flat Squares
@@ -104,7 +104,7 @@ Visualization Manager:
       Class: rviz_default_plugins/LaserScan
       Color: 0; 255; 0
       Color Transformer: FlatColor
-      Enabled: true
+      Enabled: false
       Name: Robot2 Scan
       Size (m): 0.05
       Style: Flat Squares
@@ -121,7 +121,7 @@ Visualization Manager:
       Class: rviz_default_plugins/LaserScan
       Color: 0; 100; 255
       Color Transformer: FlatColor
-      Enabled: true
+      Enabled: false
       Name: Robot3 Scan
       Size (m): 0.05
       Style: Flat Squares
