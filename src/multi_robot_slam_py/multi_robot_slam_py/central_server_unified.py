@@ -51,7 +51,8 @@ from rclpy.node import Node
 from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy
 from nav_msgs.msg import OccupancyGrid
 from sensor_msgs.msg import PointCloud2
-from tf2_ros import (Buffer, TransformListener,
+from geometry_msgs.msg import TransformStamped
+from tf2_ros import (Buffer, TransformListener, TransformBroadcaster,
                      LookupException, ConnectivityException,
                      ExtrapolationException)
 from tf2_sensor_msgs.tf2_sensor_msgs import do_transform_cloud
@@ -378,6 +379,10 @@ class DriftCorrector:
             rot_deg   = math.degrees(math.acos(cos_val))
             trans_m   = float(np.linalg.norm(T[:3, 3]))
 
+            # Strip rotation — only apply translational correction
+            T[:3, :3] = np.eye(3)
+            # Recompute rot_deg after stripping (will be 0)
+            rot_deg = 0.0
             accepted = (
                 fitness  > self.MIN_FITNESS  and
                 rmse     < self.MAX_RMSE_M   and
@@ -406,15 +411,12 @@ class DriftCorrector:
 
             if accepted:
                 # Compose with existing correction (incremental update)
-                self.transforms[name] = T @ self.transforms[name]
+                self.transforms[name] = T
 
         return self.transforms
 
     def apply(self, name: str, cloud: np.ndarray) -> np.ndarray:
-        T = self.transforms.get(name, np.eye(4))
-        if np.allclose(T, np.eye(4)):
-            return cloud
-        return apply_transform(cloud, T)
+        return cloud  # TF-based correction; cloud untouched
 
     @property
     def n_accepted(self):
@@ -465,7 +467,7 @@ class CentralServer(Node):
         # ICP
         self.declare_parameter("icp_voxel_size",         0.15)
         self.declare_parameter("icp_max_correspondence", 1.0)
-        self.declare_parameter("icp_frequency",          0.2)   # Hz: every 5 s
+        self.declare_parameter("icp_frequency",          0.016)   # Hz: every 5 s
         # GNN online updates
         self.declare_parameter("gnn_update_interval",    60.0)  # seconds
 
@@ -506,8 +508,10 @@ class CentralServer(Node):
             }, f, indent=2)
 
         # ── TF ────────────────────────────────────────────────────────────────
-        self.tf_buffer   = Buffer()
-        self.tf_listener = TransformListener(self.tf_buffer, self)
+        self.tf_buffer      = Buffer()
+        self.tf_listener    = TransformListener(self.tf_buffer, self)
+        self.tf_broadcaster = TransformBroadcaster(self)
+        self.icp_corrections = {n: None for n in ns}
 
         # ── State ─────────────────────────────────────────────────────────────
         self.robot_clouds      = {n: np.zeros((0, 3), dtype=np.float32) for n in ns}
@@ -605,9 +609,10 @@ class CentralServer(Node):
                 combined = _voxel_downsample(combined, voxel_size=0.05)
             self.robot_clouds[robot_ns] = combined
 
-        # Apply ICP drift correction if available
+        # Apply ICP drift correction via transform (not cloud shifting)
         if self.drift_corrector is not None:
-            xyz_corrected = self.drift_corrector.apply(robot_ns, combined)
+            T_corr = self.icp_corrections.get(robot_ns)
+            xyz_corrected = apply_transform(combined, T_corr) if T_corr is not None and not np.allclose(T_corr, np.eye(4)) else combined
         else:
             xyz_corrected = combined
 
@@ -635,6 +640,35 @@ class CentralServer(Node):
         if total > 0:
             self.get_logger().info(
                 f"[ICP] drift correction: {accepted}/{total} accepted")
+
+        # Publish per-robot TF corrections
+        now = self.get_clock().now().to_msg()
+        for rec in self.drift_corrector.log[-len(self.robot_namespaces):]:
+            if not rec["accepted"]:
+                continue
+            name = rec["robot"]
+            T = np.array(rec["T"])
+            with self.lock:
+                self.icp_corrections[name] = T
+            # Publish as TF for visualisation
+            import math as _math
+            ts = TransformStamped()
+            ts.header.stamp    = now
+            ts.header.frame_id = "world"
+            ts.child_frame_id  = f"icp_correction/{name}"
+            ts.transform.translation.x = float(T[0,3])
+            ts.transform.translation.y = float(T[1,3])
+            ts.transform.translation.z = float(T[2,3])
+            R = T[:3,:3]; tr = R[0,0]+R[1,1]+R[2,2]
+            if tr > 0:
+                s=0.5/_math.sqrt(tr+1.0); qw=0.25/s
+                qx=(R[2,1]-R[1,2])*s; qy=(R[0,2]-R[2,0])*s; qz=(R[1,0]-R[0,1])*s
+            else:
+                qw,qx,qy,qz=1.0,0.0,0.0,0.0
+            n=_math.sqrt(qw**2+qx**2+qy**2+qz**2)
+            ts.transform.rotation.w=qw/n; ts.transform.rotation.x=qx/n
+            ts.transform.rotation.y=qy/n; ts.transform.rotation.z=qz/n
+            self.tf_broadcaster.sendTransform(ts)
 
     # ── GNN online update ─────────────────────────────────────────────────────
 

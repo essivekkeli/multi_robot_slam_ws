@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import rclpy
+import rclpy.parameter
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from tf2_ros import Buffer, TransformListener
@@ -55,7 +56,7 @@ STUCK_TIMEOUT  = 30.0
 
 class MultiRobotDriver(Node):
     def __init__(self):
-        super().__init__("multi_robot_driver")
+        super().__init__("multi_robot_driver", parameter_overrides=[rclpy.parameter.Parameter("use_sim_time", rclpy.Parameter.Type.BOOL, True)])
         self.tf_buffer   = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
         self.robots = {}
