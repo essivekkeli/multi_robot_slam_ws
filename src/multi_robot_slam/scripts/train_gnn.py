@@ -1,3 +1,4 @@
+#train_gnn.py
 #!/usr/bin/env python3
 """
 train_gnn.py — Stage 3a Week 4: GNN map fusion (v4)

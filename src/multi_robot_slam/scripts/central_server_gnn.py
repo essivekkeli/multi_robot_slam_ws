@@ -1,444 +1,478 @@
 #!/usr/bin/env python3
 """
-Central Server — Stage 3a Week 4: GNN-based Map Fusion
+central_server_gnn.py  —  GNN-based map fusion module
+======================================================
+Two execution paths:
 
-Uses data-derived optimal fusion weights learned from 12 training runs.
-Each robot's map contribution is weighted by its average quality relative
-to the SDF ground truth, computed via constrained least-squares optimisation
-across all collected training samples.
+  1. Trained PyTorch model (preferred):
+     Loads /ros2_ws/results/gnn/gnn_fusion.pt if available.
+     Uses CNN-based GNNMapFusion from train_gnn.py for per-robot weights.
 
-Learned weights (mean optimal across 12 samples):
-  robot1: 0.403  (highest — most spatially consistent with GT)
-  robot2: 0.284
-  robot3: 0.314
+  2. NumPy GAT fallback:
+     2-layer Graph Attention Network, pure NumPy, no ML framework needed.
+     Weights initialised analytically with optional online self-supervised
+     update (finite-difference gradient on W_out only — 8 parameters).
 
-Thesis context
---------------
-  Training on 12 samples revealed systematic quality differences between
-  robots. The GNN converged to predicting mean optimal weights rather than
-  per-scene weights, indicating the quality difference is consistent across
-  runs. These data-driven weights replace the hand-designed rules used in
-  baseline (occupied-wins), ICP (occupied-wins after correction), and
-  probabilistic (log-odds) methods.
+Public API used by central_server_unified.py:
+  load_gnn_model(n_robots)          -> OccupancyGridGNN instance
+  update_gnn(model, maps, res, pc)  -> updates W_out weights in-place
+  fuse_with_gnn(model, maps, res)   -> OccupancyGrid | None
+  fuse_with_gnn_trained(maps, res)  -> OccupancyGrid | None
 
-Difference from other methods
-------------------------------
-  Baseline:      equal implicit weight, deterministic occupied-wins
-  ICP:           equal implicit weight after geometric correction
-  Probabilistic: weight by observation count (log-odds)
-  GNN (this):    weight by learned data-driven quality score per robot
+Changes from v1:
+  FIX1: _node_features division by zero when all point counts = 0
+  FIX2: _pytorch_gnn_weights file handle leak (open without close)
+  FIX3: torch.load weights_only=False to suppress FutureWarning flood
+  CLEAN: _weighted_fuse extracted to remove code duplication between
+         OccupancyGridGNN.fuse() and fuse_with_gnn()
 """
 
-import rclpy
-from rclpy.node import Node
-from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy
-from nav_msgs.msg import OccupancyGrid
-from sensor_msgs.msg import PointCloud2
-from tf2_ros import (Buffer, TransformListener,
-                     LookupException, ConnectivityException,
-                     ExtrapolationException)
-from tf2_sensor_msgs.tf2_sensor_msgs import do_transform_cloud
 import numpy as np
-import struct, threading, json, os, time
-from datetime import datetime
+import os as _os
+from nav_msgs.msg import OccupancyGrid
+
+# -- Constants ----------------------------------------------------------------
+FEAT_DIM          = 5
+HIDDEN_DIM        = 8
+EDGE_DIM          = 2
+ATT_DIM           = HIDDEN_DIM * 2 + EDGE_DIM
+MIN_OVERLAP_CELLS = 10
+P_OCC_THRESH      = 0.65
+P_FREE_THRESH     = 0.35
+LEAKY_ALPHA       = 0.2
+
+# -- Activations --------------------------------------------------------------
+def _relu(x):                    return np.maximum(0.0, x)
+def _leaky_relu(x, alpha=LEAKY_ALPHA): return np.where(x >= 0, x, alpha * x)
+def _sigmoid(x):                 return 1.0 / (1.0 + np.exp(-np.clip(x, -20, 20)))
+def _softmax(x):                 e = np.exp(x - x.max()); return e / e.sum()
 
 
-# ─────────────────────────────────────────────
-#  Learned fusion weights
-#  Loaded from file; fallback to hardcoded values
-# ─────────────────────────────────────────────
-WEIGHTS_PATH = "/ros2_ws/results/gnn/learned_weights.npy"
-FALLBACK_WEIGHTS = np.array([0.403, 0.284, 0.314], dtype=np.float32)
+# -- Weight initialisation ----------------------------------------------------
 
-
-def load_weights(path):
-    if os.path.exists(path):
-        w = np.load(path).astype(np.float32)
-        w = np.clip(w, 0, 1)
-        w /= w.sum()
-        return w
-    return FALLBACK_WEIGHTS.copy()
-
-
-# ─────────────────────────────────────────────
-#  Shared helpers (identical to other methods)
-# ─────────────────────────────────────────────
-
-def pointcloud2_to_xyz(msg):
-    offsets = {}
-    for field in msg.fields:
-        if field.name in ("x","y","z"):
-            offsets[field.name] = field.offset
-    if not all(k in offsets for k in ("x","y","z")):
-        return np.array([])
-    n, step, data = msg.width*msg.height, msg.point_step, msg.data
-    xyz = np.zeros((n,3), dtype=np.float32)
-    for i in range(n):
-        base = i*step
-        xyz[i,0] = struct.unpack_from("f",data,base+offsets["x"])[0]
-        xyz[i,1] = struct.unpack_from("f",data,base+offsets["y"])[0]
-        xyz[i,2] = struct.unpack_from("f",data,base+offsets["z"])[0]
-    return xyz[np.isfinite(xyz).all(axis=1)]
-
-
-def accumulated_cloud_to_occupancy_grid(xyz, resolution=0.05,
-                                        z_min=0.1, z_max=2.5,
-                                        frame_id="world"):
-    if len(xyz) == 0: return None
-    mask  = (xyz[:,2]>=z_min)&(xyz[:,2]<=z_max)
-    pts2d = xyz[mask,:2]
-    if len(pts2d) == 0: return None
-    floor_mask = (xyz[:,2]>=-0.5)&(xyz[:,2]<z_min)
-    floor_pts  = xyz[floor_mask,:2]
-    all_pts = np.vstack([pts2d,floor_pts]) if len(floor_pts)>0 else pts2d
-    mn_x=all_pts[:,0].min()-1.0; mn_y=all_pts[:,1].min()-1.0
-    mx_x=all_pts[:,0].max()+1.0; mx_y=all_pts[:,1].max()+1.0
-    W=int(np.ceil((mx_x-mn_x)/resolution))
-    H=int(np.ceil((mx_y-mn_y)/resolution))
-    grid=np.full((H,W),-1,dtype=np.int8)
-    if len(floor_pts)>0:
-        gx=((floor_pts[:,0]-mn_x)/resolution).astype(int)
-        gy=((floor_pts[:,1]-mn_y)/resolution).astype(int)
-        v=(gx>=0)&(gx<W)&(gy>=0)&(gy<H)
-        grid[gy[v],gx[v]]=0
-    gx=((pts2d[:,0]-mn_x)/resolution).astype(int)
-    gy=((pts2d[:,1]-mn_y)/resolution).astype(int)
-    v=(gx>=0)&(gx<W)&(gy>=0)&(gy<H)
-    grid[gy[v],gx[v]]=100
-    msg=OccupancyGrid()
-    msg.info.resolution=resolution
-    msg.info.width=W; msg.info.height=H
-    msg.info.origin.position.x=float(mn_x)
-    msg.info.origin.position.y=float(mn_y)
-    msg.info.origin.orientation.w=1.0
-    msg.header.frame_id=frame_id
-    msg.data=grid.flatten().tolist()
-    return msg
-
-
-def _voxel_downsample(xyz, voxel_size=0.05):
-    voxels=np.floor(xyz/voxel_size).astype(int)
-    _,idx=np.unique(voxels,axis=0,return_index=True)
-    return xyz[idx]
-
-
-def _wall_sharpness(grid_np):
-    occupied=(grid_np==100)
-    run_lengths=[]
-    for row in occupied:
-        in_run,length=False,0
-        for val in row:
-            if val: in_run=True; length+=1
-            elif in_run: run_lengths.append(length); in_run,length=False,0
-        if in_run: run_lengths.append(length)
-    for col in occupied.T:
-        in_run,length=False,0
-        for val in col:
-            if val: in_run=True; length+=1
-            elif in_run: run_lengths.append(length); in_run,length=False,0
-        if in_run: run_lengths.append(length)
-    return float(np.mean(run_lengths)) if run_lengths else 0.0
-
-
-# ─────────────────────────────────────────────
-#  GNN weighted merge
-# ─────────────────────────────────────────────
-
-def gnn_weighted_merge(maps: dict, weights: np.ndarray,
-                       robot_namespaces: list, resolution: float):
+def _init_weights(n_robots, seed=42):
     """
-    Merge per-robot OccupancyGrids using learned fusion weights.
-
-    For each cell:
-      If multiple robots observed it:
-        weighted_score = sum(w_i * value_i) / sum(w_i for observed robots)
-        score > 0.5  → occupied (100)
-        score < 0.4  → free (0)
-        otherwise    → unknown (-1)
-      If only one robot observed it:
-        use that robot's value directly (with its weight as confidence)
-      If no robot observed it:
-        unknown (-1)
-
-    This differs from baseline occupied-wins in that a high-weight robot
-    marking a cell as free can override a low-weight robot marking it
-    as occupied — capturing the learned reliability differences.
+    Analytically-primed random weights for the 2-layer GAT.
+    Priors encode:
+      W_self_0[:,0] += 0.3   upweight occupied fraction
+      W_self_0[:,2] -= 0.2   downweight unknown fraction
+      a0[2*HIDDEN+1] += 0.5  boost overlap edge attention
     """
-    if not maps: return None
+    rng = np.random.default_rng(seed)
+    def r(*s): return rng.standard_normal(s).astype(np.float32) * 0.05
 
-    # Global bounding box
-    mn_x=mn_y= float("inf")
-    mx_x=mx_y= float("-inf")
+    W0 = r(HIDDEN_DIM, FEAT_DIM);  N0 = r(HIDDEN_DIM, FEAT_DIM);  a0 = r(ATT_DIM)
+    W0[:, 0] += 0.3;  W0[:, 2] -= 0.2;  W0[:, 4] += 0.2
+    N0[:, 0] += 0.2;  N0[:, 4] += 0.2;  a0[2 * HIDDEN_DIM + 1] += 0.5
+    W1 = r(HIDDEN_DIM, HIDDEN_DIM)
+    N1 = r(HIDDEN_DIM, HIDDEN_DIM)
+    a1 = r(HIDDEN_DIM * 2 + EDGE_DIM)
+    Wo = r(1, HIDDEN_DIM);  Wo[0, :] += 0.1
+
+    return {
+        "W_self_0": W0, "W_neigh_0": N0, "att_0": a0,
+        "W_self_1": W1, "W_neigh_1": N1, "att_1": a1,
+        "W_out":    Wo,
+    }
+
+
+# -- Grid helpers -------------------------------------------------------------
+
+def _grid_to_prob(d):
+    """OccupancyGrid int8 -> probability float32: 100->1.0, 0->0.0, -1->0.5"""
+    return np.where(d == 100, 1.0, np.where(d == 0, 0.0, 0.5)).astype(np.float32)
+
+
+def _world_bounds(maps, resolution):
+    mnx = mny =  float("inf")
+    mxx = mxy = float("-inf")
     for m in maps.values():
-        ox=m.info.origin.position.x; oy=m.info.origin.position.y
-        mn_x=min(mn_x,ox); mn_y=min(mn_y,oy)
-        mx_x=max(mx_x,ox+m.info.width*resolution)
-        mx_y=max(mx_y,oy+m.info.height*resolution)
-
-    W=int(np.ceil((mx_x-mn_x)/resolution))
-    H=int(np.ceil((mx_y-mn_y)/resolution))
-
-    # Accumulators: weighted sum and weight sum per cell
-    weighted_sum = np.zeros((H,W), dtype=np.float32)
-    weight_total = np.zeros((H,W), dtype=np.float32)
-
-    for robot_name, m in maps.items():
-        # Get this robot's learned weight
-        if robot_name in robot_namespaces:
-            idx = robot_namespaces.index(robot_name)
-            w_i = float(weights[idx])
-        else:
-            w_i = 1.0 / len(robot_namespaces)
-
-        ox    = m.info.origin.position.x
-        oy    = m.info.origin.position.y
-        mw,mh = m.info.width, m.info.height
-        x_off = int(round((ox-mn_x)/resolution))
-        y_off = int(round((oy-mn_y)/resolution))
-
-        data = np.array(m.data, dtype=np.int8).reshape(mh,mw)
-
-        # Convert to float: occupied=1.0, free=0.0, unknown=skip
-        gy,gx = np.meshgrid(np.arange(mh)+y_off,
-                             np.arange(mw)+x_off, indexing="ij")
-        valid = (gx>=0)&(gx<W)&(gy>=0)&(gy<H)
-
-        # Only update cells with known observations (not -1)
-        known = valid & (data != -1)
-
-        # Normalise: 100→1.0, 0→0.0
-        cell_val = np.where(data==100, 1.0, 0.0).astype(np.float32)
-
-        weighted_sum[gy[known],gx[known]] += w_i * cell_val[known]
-        weight_total[gy[known],gx[known]] += w_i
-
-    # Convert to occupancy
-    merged = np.full((H,W), -1, dtype=np.int8)
-    observed = weight_total > 0
-    score = np.zeros((H,W), dtype=np.float32)
-    score[observed] = weighted_sum[observed] / weight_total[observed]
-
-    merged[observed & (score > 0.5)] = 100
-    merged[observed & (score < 0.4)] = 0
-    # score in [0.4, 0.5] stays -1 (uncertain/conflicted)
-
-    gmap = OccupancyGrid()
-    gmap.header.frame_id            = "world"
-    gmap.info.resolution            = resolution
-    gmap.info.width                 = W
-    gmap.info.height                = H
-    gmap.info.origin.position.x    = mn_x
-    gmap.info.origin.position.y    = mn_y
-    gmap.info.origin.orientation.w = 1.0
-    gmap.data = merged.flatten().tolist()
-    return gmap
+        ox = m.info.origin.position.x;  oy = m.info.origin.position.y
+        mnx = min(mnx, ox);  mny = min(mny, oy)
+        mxx = max(mxx, ox + m.info.width  * resolution)
+        mxy = max(mxy, oy + m.info.height * resolution)
+    return mnx, mny, mxx, mxy
 
 
-# ─────────────────────────────────────────────
-#  Central Server node
-# ─────────────────────────────────────────────
+def _map_to_full_grid(m, mnx, mny, W, H, res):
+    """Project a per-robot OccupancyGrid into the world-frame canvas."""
+    g  = np.full((H, W), 0.5, dtype=np.float32)
+    xo = int(round((m.info.origin.position.x - mnx) / res))
+    yo = int(round((m.info.origin.position.y - mny) / res))
+    d  = np.array(m.data, dtype=np.int8).reshape(m.info.height, m.info.width)
+    p  = _grid_to_prob(d)
+    re = min(yo + m.info.height, H)
+    ce = min(xo + m.info.width,  W)
+    if re > yo and ce > xo and yo >= 0 and xo >= 0:
+        g[yo:re, xo:ce] = p[:re - yo, :ce - xo]
+    return g
 
-class CentralServer(Node):
-    def __init__(self):
-        super().__init__("central_server")
 
-        self.declare_parameter("robot_namespaces",     ["robot1","robot2","robot3"])
-        self.declare_parameter("map_merge_frequency",  1.0)
-        self.declare_parameter("resolution",           0.05)
-        self.declare_parameter("z_min",                0.1)
-        self.declare_parameter("z_max",                2.5)
-        self.declare_parameter("max_points_per_robot", 500000)
-        self.declare_parameter("metrics_interval_sec", 30.0)
-        self.declare_parameter("method_label",         "gnn")
-        self.declare_parameter("weights_path",         WEIGHTS_PATH)
+def _sharpness(g):
+    """
+    Mean run-length of occupied cells (lower = sharper/thinner walls).
+    Padding ensures every start transition has a matching end transition
+    so np.where(starts) and np.where(ends) always return equal-length arrays.
+    """
+    occ = (g == 1.0)
+    p   = np.pad(occ, ((0, 0), (1, 1)), constant_values=False)
+    s   = ~p[:, :-1] &  p[:, 1:]
+    e   =  p[:, :-1] & ~p[:, 1:]
+    rl  = np.where(e)[1] - np.where(s)[1]
+    return float(rl.mean()) if len(rl) > 0 else 1.0
 
-        self.robot_namespaces = self.get_parameter("robot_namespaces").value
-        self.merge_frequency  = self.get_parameter("map_merge_frequency").value
-        self.resolution       = self.get_parameter("resolution").value
-        self.z_min            = self.get_parameter("z_min").value
-        self.z_max            = self.get_parameter("z_max").value
-        self.max_points       = self.get_parameter("max_points_per_robot").value
-        self.metrics_interval = self.get_parameter("metrics_interval_sec").value
-        self.method_label     = self.get_parameter("method_label").value
-        weights_path          = self.get_parameter("weights_path").value
 
-        # Load learned weights
-        self.fusion_weights = load_weights(weights_path)
-        self.get_logger().info(
-            f"Fusion weights loaded from {weights_path}: "
-            + "  ".join(f"{r}={self.fusion_weights[i]:.3f}"
-                        for i,r in enumerate(self.robot_namespaces)))
+# -- Node / edge features -----------------------------------------------------
 
-        # Metrics
-        run_ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.metrics_dir  = f"/tmp/fusion_metrics/{self.method_label}_{run_ts}"
-        os.makedirs(self.metrics_dir, exist_ok=True)
-        self.metrics_file = os.path.join(self.metrics_dir, "metrics.jsonl")
-        self.start_time   = time.time()
-        with open(os.path.join(self.metrics_dir,"run_info.json"),"w") as f:
-            json.dump({
-                "method":          self.method_label,
-                "started":         run_ts,
-                "resolution":      self.resolution,
-                "z_min":           self.z_min,
-                "z_max":           self.z_max,
-                "robots":          list(self.robot_namespaces),
-                "fusion_weights":  self.fusion_weights.tolist(),
-                "weights_source":  weights_path,
-            }, f, indent=2)
-        self.get_logger().info(f"Metrics → {self.metrics_dir}")
+def _node_features(grids, names, pc=None):
+    """
+    5-dim feature vector per robot:
+      [occ_frac, free_frac, unknown_frac, point_density, sharpness]
 
-        # TF
-        self.tf_buffer   = Buffer()
-        self.tf_listener = TransformListener(self.tf_buffer, self)
+    FIX1: max(max(pc.values()), 1) prevents division by zero when all
+    robots have 0 accumulated points at the start of a run.
+    """
+    n  = len(names)
+    F  = np.zeros((n, FEAT_DIM), dtype=np.float32)
+    mp = max(max(pc.values()), 1) if pc else 1   # FIX1
+    for i, name in enumerate(names):
+        g  = grids[name]
+        km = g != 0.5
+        nk = km.sum()
+        if nk == 0:
+            F[i] = [0, 0, 1, 0, 0]
+            continue
+        oc = float((g == 1.0).sum()) / nk
+        fr = float((g == 0.0).sum()) / nk
+        dn = (pc[name] / mp) if pc else 0.5
+        sh = min(_sharpness(g) / 10.0, 1.0)
+        F[i] = [oc, fr, 1 - oc - fr, float(dn), sh]
+    return F
 
-        # State
-        self.robot_clouds = {n: np.zeros((0,3),dtype=np.float32)
-                             for n in self.robot_namespaces}
-        self.robot_maps        = {}
-        self.global_map_latest = None
-        self.lock = threading.Lock()
 
-        # Publishers
-        qos = QoSProfile(depth=1,
-                         durability=DurabilityPolicy.TRANSIENT_LOCAL,
-                         reliability=ReliabilityPolicy.RELIABLE)
-        self.global_map_pub = self.create_publisher(OccupancyGrid,"/global_map",qos)
-        self.robot_map_pubs = {
-            n: self.create_publisher(OccupancyGrid,f"/{n}/map",qos)
-            for n in self.robot_namespaces}
+def _edge_features(grids, names):
+    """
+    2-dim edge feature for each overlapping robot pair:
+      [overlap_ratio, agreement_ratio]
+    Only pairs with >= MIN_OVERLAP_CELLS known cells in common get an edge.
+    """
+    n     = len(names)
+    edges = {}
+    for i in range(n):
+        for j in range(i + 1, n):
+            gi = grids[names[i]];  gj = grids[names[j]]
+            ki = gi != 0.5;        kj = gj != 0.5
+            both   = ki & kj
+            either = ki | kj
+            nb = int(both.sum())
+            if nb < MIN_OVERLAP_CELLS:
+                continue
+            ov = nb / max(int(either.sum()), 1)
+            ag = float((both & (np.abs(gi - gj) < 0.5)).sum()) / nb
+            ef = np.array([ov, ag], dtype=np.float32)
+            edges[(i, j)] = ef
+            edges[(j, i)] = ef
+    return edges
 
-        # Subscribers
-        for name in self.robot_namespaces:
-            self.create_subscription(
-                PointCloud2, f"/{name}/glim/aligned_points",
-                lambda msg,n=name: self.pointcloud_callback(msg,n), 10)
-            self.get_logger().info(f"Subscribed to /{name}/glim/aligned_points")
 
-        # Timers
-        self.merge_timer   = self.create_timer(
-            1.0/self.merge_frequency, self.merge_and_publish)
-        self.metrics_timer = self.create_timer(
-            self.metrics_interval, self.log_metrics)
+# -- GNN forward pass ---------------------------------------------------------
 
-        self.get_logger().info(
-            f"Central Server (GNN learned-weight fusion) started  "
-            f"method={self.method_label}")
+def _gnn_forward(F, edges, weights):
+    """
+    2-layer Graph Attention Network forward pass.
+    Returns per-robot confidence weights that sum to 1.
+    """
+    n = F.shape[0]
+    H = F.copy()
 
-    # ── upstream pipeline (identical to all other methods) ────────────────
+    for layer in range(2):
+        Ws = weights[f"W_self_{layer}"]
+        Wn = weights[f"W_neigh_{layer}"]
+        av = weights[f"att_{layer}"]
+        Hn = np.zeros((n, HIDDEN_DIM), dtype=np.float32)
 
-    def pointcloud_callback(self, msg, robot_ns):
-        try:
-            transform = self.tf_buffer.lookup_transform(
-                "world", msg.header.frame_id,
-                rclpy.time.Time(),
-                timeout=rclpy.duration.Duration(seconds=0.1))
-            msg_world = do_transform_cloud(msg, transform)
-        except (LookupException,ConnectivityException,ExtrapolationException) as e:
-            self.get_logger().warn(
-                f"TF lookup failed for {robot_ns}: {e}",
-                throttle_duration_sec=5.0)
-            msg_world = msg
+        for i in range(n):
+            sm = Ws @ H[i]
+            ni = [j for (ii, j) in edges if ii == i]
+            if not ni:
+                Hn[i] = _relu(sm)
+                continue
+            ats = [];  nms = []
+            for j in ni:
+                nm = Wn @ H[j]
+                ats.append(_leaky_relu(av @ np.concatenate([sm, nm, edges[(i, j)]])))
+                nms.append(nm)
+            aw  = _softmax(np.array(ats, dtype=np.float32))
+            agg = sum(w * m for w, m in zip(aw, nms))
+            Hn[i] = _relu(sm + agg)
+        H = Hn
 
-        xyz = pointcloud2_to_xyz(msg_world)
-        if len(xyz) == 0: return
+    c = _sigmoid((weights["W_out"] @ H.T).flatten())
+    t = c.sum()
+    return (c / t).astype(np.float32) if t > 1e-8 else np.ones(n, dtype=np.float32) / n
 
-        with self.lock:
-            cur = self.robot_clouds[robot_ns]
-            combined = np.vstack([cur,xyz]) if len(cur)>0 else xyz
-            if len(combined) > self.max_points:
-                combined = _voxel_downsample(combined, voxel_size=0.05)
-            self.robot_clouds[robot_ns] = combined
 
-        occ = accumulated_cloud_to_occupancy_grid(
-            combined, resolution=self.resolution,
-            z_min=self.z_min, z_max=self.z_max, frame_id="world")
-        if occ is None: return
-        occ.header.stamp = msg.header.stamp
+# -- Shared weighted fusion ---------------------------------------------------
 
-        with self.lock:
-            self.robot_maps[robot_ns] = occ
-        self.robot_map_pubs[robot_ns].publish(occ)
+def _weighted_fuse(fg, names, rw, mnx, mny, W, H, resolution):
+    """
+    Weighted average of per-robot probability grids.
+    Unknown cells (0.5) are excluded from the weighted sum.
+    Thresholds result to OccupancyGrid int8 values.
 
-    # ── GNN weighted merge ────────────────────────────────────────────────
+    Used by both OccupancyGridGNN.fuse() and fuse_with_gnn() to avoid
+    code duplication.
+    """
+    fp = np.zeros((H, W), dtype=np.float32)
+    tw = np.zeros((H, W), dtype=np.float32)
+    for i, name in enumerate(names):
+        g  = fg[name]
+        kn = (g != 0.5).astype(np.float32)
+        fp += rw[i] * g  * kn
+        tw += rw[i] * kn
+    ob      = tw > 1e-8
+    fp[ob] /= tw[ob]
+    fp[~ob] = 0.5
 
-    def merge_and_publish(self):
-        with self.lock:
-            if not self.robot_maps: return
-            maps = dict(self.robot_maps)
+    mg = np.full((H, W), -1, dtype=np.int8)
+    mg[fp >  P_OCC_THRESH]  = 100
+    mg[fp <  P_FREE_THRESH] = 0
 
-        global_map = gnn_weighted_merge(
-            maps, self.fusion_weights,
-            list(self.robot_namespaces), self.resolution)
-        if global_map is None: return
+    out = OccupancyGrid()
+    out.header.frame_id            = "world"
+    out.info.resolution            = resolution
+    out.info.width                 = W
+    out.info.height                = H
+    out.info.origin.position.x    = float(mnx)
+    out.info.origin.position.y    = float(mny)
+    out.info.origin.orientation.w = 1.0
+    out.data = mg.flatten().tolist()
+    return out
 
-        global_map.header.stamp = self.get_clock().now().to_msg()
-        self.global_map_pub.publish(global_map)
 
-        with self.lock:
-            self.global_map_latest = global_map
+# -- OccupancyGridGNN class ---------------------------------------------------
 
-    # ── metrics (identical schema to baseline, ICP, probabilistic) ────────
+class OccupancyGridGNN:
+    """
+    Pure-NumPy GNN for occupancy grid fusion.
 
-    def log_metrics(self):
-        with self.lock:
-            gmap   = self.global_map_latest
-            clouds = {n: len(c) for n,c in self.robot_clouds.items()}
+    fuse()           weighted map fusion using GNN per-robot confidence weights
+    update_weights() online finite-difference update of W_out (8 params only)
 
-        if gmap is None:
-            self.get_logger().info("[Metrics] No map yet")
+    Online learning note: only W_out (output head, shape 1x8) is updated.
+    Attention layers are frozen. Framed in thesis as "online adaptation of
+    output confidence weights via finite-difference gradient descent."
+    """
+
+    def __init__(self, n_robots=3, seed=42, learning_rate=0.01):
+        self.n_robots      = n_robots
+        self.lr            = learning_rate
+        self.weights       = _init_weights(n_robots, seed)
+        self._update_count = 0
+
+    def fuse(self, maps, resolution, point_counts=None):
+        if not maps:
+            return None
+        names = sorted(maps.keys())
+        mnx, mny, mxx, mxy = _world_bounds(maps, resolution)
+        W = int(np.ceil((mxx - mnx) / resolution))
+        H = int(np.ceil((mxy - mny) / resolution))
+        if W <= 0 or H <= 0:
+            return None
+        fg    = {n: _map_to_full_grid(maps[n], mnx, mny, W, H, resolution) for n in names}
+        pc    = point_counts or {n: 1 for n in names}
+        F     = _node_features(fg, names, pc)
+        edges = _edge_features(fg, names)
+        rw    = _gnn_forward(F, edges, self.weights)
+        return _weighted_fuse(fg, names, rw, mnx, mny, W, H, resolution)
+
+    def update_weights(self, maps, resolution, point_counts=None):
+        names = sorted(maps.keys())
+        n     = len(names)
+        mnx, mny, mxx, mxy = _world_bounds(maps, resolution)
+        W = int(np.ceil((mxx - mnx) / resolution))
+        H = int(np.ceil((mxy - mny) / resolution))
+        if W <= 0 or H <= 0:
+            return
+        fg    = {nm: _map_to_full_grid(maps[nm], mnx, mny, W, H, resolution) for nm in names}
+        edges = _edge_features(fg, names)
+        if not edges:
+            return
+        pc = point_counts or {nm: 1 for nm in names}
+        F  = _node_features(fg, names, pc)
+
+        oc = None
+        for (i, j) in [(e[0], e[1]) for e in edges if e[0] < e[1]]:
+            mask = (fg[names[i]] != 0.5) & (fg[names[j]] != 0.5)
+            oc   = mask if oc is None else (oc | mask)
+        if oc is None or oc.sum() < MIN_OVERLAP_CELLS:
             return
 
-        data         = np.array(gmap.data, dtype=np.int8)
-        total        = len(data)
-        unknown_pct  = float(np.sum(data==-1)  /total*100)
-        occupied_pct = float(np.sum(data==100) /total*100)
-        free_pct     = float(np.sum(data==0)   /total*100)
-        sharpness    = _wall_sharpness(data.reshape(gmap.info.height,
-                                                    gmap.info.width))
-        elapsed      = time.time()-self.start_time
+        def loss(w):
+            rw = _gnn_forward(F, edges, w)
+            fs = np.zeros((H, W), dtype=np.float32)
+            tw = np.zeros((H, W), dtype=np.float32)
+            for i, nm in enumerate(names):
+                g  = fg[nm]
+                kn = (g != 0.5).astype(np.float32)
+                fs += rw[i] * g * kn
+                tw += rw[i] * kn
+            ob = tw > 1e-8
+            fs[ob]  /= tw[ob]
+            fs[~ob]  = 0.5
+            l = 0.0
+            for nm in names:
+                g  = fg[nm]
+                kn = (g != 0.5) & oc
+                if kn.sum() == 0:
+                    continue
+                l += float(np.mean((fs[kn] - g[kn]) ** 2))
+            return l / max(n, 1)
 
-        record = {
-            "timestamp":               datetime.now().isoformat(),
-            "elapsed_sec":             round(elapsed,1),
-            "method":                  self.method_label,
-            "map_width":               gmap.info.width,
-            "map_height":              gmap.info.height,
-            "total_cells":             total,
-            "unknown_pct":             round(unknown_pct,2),
-            "occupied_pct":            round(occupied_pct,2),
-            "free_pct":                round(free_pct,2),
-            "wall_sharpness_mean_run": round(sharpness,3),
-            "points_per_robot":        clouds,
-            "fusion_weights":          self.fusion_weights.tolist(),
-        }
-        with open(self.metrics_file,"a") as f:
-            f.write(json.dumps(record)+"\n")
-        self.get_logger().info(
-            f"[Metrics] t={elapsed:.0f}s | "
-            f"unknown={unknown_pct:.1f}% occ={occupied_pct:.1f}% "
-            f"free={free_pct:.1f}% sharpness={sharpness:.2f} | "
-            f"pts={clouds}")
+        eps  = 1e-3
+        bl   = loss(self.weights)
+        Wo   = self.weights["W_out"]
+        grad = np.zeros_like(Wo)
+        for idx in np.ndindex(*Wo.shape):
+            Wo[idx]   += eps
+            grad[idx]  = (loss(self.weights) - bl) / eps
+            Wo[idx]   -= eps
+        self.weights["W_out"] = Wo - self.lr * grad
+        self._update_count   += 1
 
 
-# ─────────────────────────────────────────────
-#  Entry point
-# ─────────────────────────────────────────────
+# -- Singleton loader ---------------------------------------------------------
 
-def main(args=None):
-    rclpy.init(args=args)
-    server = CentralServer()
+_DEFAULT_GNN = None
+
+def load_gnn_model(n_robots=3):
+    global _DEFAULT_GNN
+    if _DEFAULT_GNN is None:
+        _DEFAULT_GNN = OccupancyGridGNN(n_robots=n_robots)
+    return _DEFAULT_GNN
+
+
+def update_gnn(model, maps, resolution, point_counts=None):
+    model.update_weights(maps, resolution, point_counts=point_counts)
+
+
+# -- Trained PyTorch model ----------------------------------------------------
+
+_TRAINED_GNN_MODEL  = None
+_TRAINED_MODEL_PATH = "/ros2_ws/results/gnn/gnn_fusion.pt"
+_GT_META_PATH       = "/ros2_ws/results/gnn/ground_truth_meta.json"
+_TRAINED_GNN_LOADED = False
+
+
+def _load_pytorch_gnn():
+    global _TRAINED_GNN_MODEL, _TRAINED_GNN_LOADED
+    if _TRAINED_GNN_LOADED:
+        return _TRAINED_GNN_MODEL
+    _TRAINED_GNN_LOADED = True
+
+    if not _os.path.exists(_TRAINED_MODEL_PATH):
+        print(f"[GNN] No trained model at {_TRAINED_MODEL_PATH}")
+        return None
+    if not _os.path.exists(_GT_META_PATH):
+        print("[GNN] No ground truth meta — cannot use trained model")
+        return None
     try:
-        rclpy.spin(server)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        server.log_metrics()
-        server.get_logger().info(
-            f"Final snapshot → {server.metrics_dir}")
-        server.destroy_node()
-        try: rclpy.shutdown()
-        except: pass
+        import torch, sys
+        sys.path.insert(0, "/ros2_ws/src/multi_robot_slam/scripts")
+        from train_gnn import GNNMapFusion
+        # FIX3: weights_only=False suppresses FutureWarning in PyTorch 2.x
+        ckpt  = torch.load(_TRAINED_MODEL_PATH, map_location="cpu", weights_only=False)
+        model = GNNMapFusion()
+        model.load_state_dict(ckpt["model_state"])
+        model.eval()
+        _TRAINED_GNN_MODEL = model
+        print(f"[GNN] Loaded trained model — "
+              f"val_MSE={ckpt['val_mse']:.6f}  epoch={ckpt['epoch']}")
+        return model
+    except Exception as e:
+        print(f"[GNN] Failed to load trained model: {e}")
+        return None
 
-if __name__ == "__main__":
-    main()
+
+def _pytorch_gnn_weights(maps, resolution):
+    """
+    Run trained PyTorch model to get per-robot fusion weights.
+    Returns {robot_name: float} or None if model unavailable/inference fails.
+    """
+    import json
+    model = _load_pytorch_gnn()
+    if model is None:
+        return None
+    try:
+        import torch, sys
+        sys.path.insert(0, "/ros2_ws/src/multi_robot_slam/scripts")
+        from train_gnn import GRID_SIZE, project_to_world_grid
+
+        # FIX2: context manager prevents file handle leak
+        with open(_GT_META_PATH) as f:
+            gt_meta = json.load(f)
+
+        names     = sorted(maps.keys())
+        projected = []
+        for name in names:
+            m  = maps[name]
+            mm = {
+                "origin_x":   m.info.origin.position.x,
+                "origin_y":   m.info.origin.position.y,
+                "resolution": resolution,
+            }
+            data = np.array(m.data, dtype=np.int8).reshape(
+                m.info.height, m.info.width)
+            projected.append(project_to_world_grid(data, mm, gt_meta, GRID_SIZE))
+
+        X   = np.stack(projected)[:, np.newaxis, :, :]
+        X_t = torch.from_numpy(X.astype(np.float32)).unsqueeze(0)
+        with torch.no_grad():
+            w = model(X_t).squeeze(0).numpy()
+        return {name: float(w[i]) for i, name in enumerate(names)}
+
+    except Exception as e:
+        print(f"[GNN] Inference error: {e}")
+        return None
+
+
+# -- Public fusion functions --------------------------------------------------
+
+def fuse_with_gnn(model, maps, resolution, point_counts=None):
+    """
+    Fuse maps using GNN-computed per-robot weights.
+    Tries trained PyTorch model first; falls back to numpy GAT weights.
+    model: OccupancyGridGNN instance (used as fallback weight source only)
+    """
+    if not maps:
+        return None
+    names = sorted(maps.keys())
+    mnx, mny, mxx, mxy = _world_bounds(maps, resolution)
+    W = int(np.ceil((mxx - mnx) / resolution))
+    H = int(np.ceil((mxy - mny) / resolution))
+    if W <= 0 or H <= 0:
+        return None
+    fg = {name: _map_to_full_grid(maps[name], mnx, mny, W, H, resolution)
+          for name in names}
+
+    trained_w = _pytorch_gnn_weights(maps, resolution)
+    if trained_w is not None:
+        rw = np.array([trained_w[name] for name in names], dtype=np.float32)
+    else:
+        pc    = point_counts or {name: 1 for name in names}
+        F     = _node_features(fg, names, pc)
+        edges = _edge_features(fg, names)
+        rw    = _gnn_forward(F, edges, model.weights)
+
+    return _weighted_fuse(fg, names, rw, mnx, mny, W, H, resolution)
+
+
+def fuse_with_gnn_trained(maps, resolution, point_counts=None, fallback_model=None):
+    """
+    Entry point called by central_server_unified.gnn_merge().
+    Uses trained .pt model if available, else numpy GAT fallback.
+    """
+    if fallback_model is None:
+        fallback_model = load_gnn_model()
+    return fuse_with_gnn(fallback_model, maps, resolution,
+                         point_counts=point_counts)

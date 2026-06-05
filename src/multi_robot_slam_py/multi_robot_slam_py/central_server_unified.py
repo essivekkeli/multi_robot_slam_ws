@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-central_server_unified.py  —  Stage 3a unified fusion server  (v2)
+central_server_unified.py  —  Stage 3a unified fusion server  (v3)
 ====================================================================
 Controlled via a single ROS parameter:
 
@@ -16,34 +16,26 @@ Method matrix:
   │ probabilistic    │ log_odds      │ none         │
   │ icp_probabilistic│ log_odds      │ VGICP        │
   │ gnn              │ gnn           │ none         │
-  │ icp_gnn          │ gnn           │ VGICP        │  ← NEW
+  │ icp_gnn          │ gnn           │ VGICP        │
   └──────────────────┴───────────────┴──────────────┘
 
-ICP (VGICP) — corrected architecture
-──────────────────────────────────────
-Previous version aligned robot_A vs robot_B in world frame, which
-is redundant because TF already places them in the same frame.
+ICP (VGICP) — per-robot drift correction:
+  For each robot i, align C_i against C_ref = union(C_j for j≠i).
+  Translation-only correction applied (rotation stripped after acceptance
+  check to avoid over-correcting in featureless flat simulation).
+  Rotation is checked BEFORE stripping for acceptance gating.
 
-Fixed approach — per-robot drift correction:
-  For each robot i, align C_i (its accumulated cloud) against
-  the CONSENSUS cloud  C_ref = union( C_j  for j ≠ i ).
-  The resulting transform T_i corrects GLIM drift for robot i
-  in the world frame.
+GNN:
+  Uses trained PyTorch model at /ros2_ws/results/gnn/gnn_fusion.pt if
+  available; falls back to pure-NumPy 2-layer GAT with online updates.
 
-  Acceptance criteria relaxed to match realistic GLIM drift in
-  a flat Gazebo simulation:
-    fitness  > 0.05   (low overlap expected in multi-robot scenario)
-    rmse     < 5.0 m  (drift can be metres in flat sim)
-    rot      < 20°    (yaw drift)
-    trans    < 3.0 m  (translational drift)
-
-GNN — real implementation (see central_server_gnn.py)
-───────────────────────────────────────────────────────
-  2-layer Graph Attention Network, pure NumPy, no ML framework needed.
-  Weights initialised analytically; optional online self-supervised update.
-
-Usage:
-  python3 central_server_unified.py --ros-args -p method_label:=icp_gnn
+Changes from v2:
+  FIX1: pointcloud2_to_xyz uses numpy strided read (~100x faster)
+  FIX2: icp_frequency corrected to 0.2 Hz (every 5s, was 0.016 = 62s)
+  FIX3: real rot_deg logged and checked BEFORE rotation is stripped
+  FIX4: icp_corrections read inside lock to prevent race condition
+  CLEAN: removed dead DriftCorrector.apply() and .transforms
+  CLEAN: TF correction broadcast documented as visualisation-only
 """
 
 import rclpy
@@ -57,7 +49,6 @@ from tf2_ros import (Buffer, TransformListener, TransformBroadcaster,
                      ExtrapolationException)
 from tf2_sensor_msgs.tf2_sensor_msgs import do_transform_cloud
 import numpy as np
-import struct
 import threading
 import json
 import os
@@ -79,7 +70,7 @@ METHOD_CONFIG = {
     "probabilistic":      {"merge": "log_odds",      "icp": False},
     "icp_probabilistic":  {"merge": "log_odds",      "icp": True},
     "gnn":                {"merge": "gnn",            "icp": False},
-    "icp_gnn":            {"merge": "gnn",            "icp": True},   # NEW
+    "icp_gnn":            {"merge": "gnn",            "icp": True},
 }
 
 
@@ -88,21 +79,26 @@ METHOD_CONFIG = {
 # ─────────────────────────────────────────────────────────────────────────────
 
 def pointcloud2_to_xyz(msg):
+    """
+    FIX1: numpy structured dtype read instead of Python loop.
+    ~100x faster for large clouds (5k-20k points at 10Hz per robot).
+    """
     offsets = {}
     for field in msg.fields:
         if field.name in ("x", "y", "z"):
             offsets[field.name] = field.offset
     if not all(k in offsets for k in ("x", "y", "z")):
-        return np.array([])
+        return np.zeros((0, 3), dtype=np.float32)
+
     n    = msg.width * msg.height
     step = msg.point_step
-    data = msg.data
-    xyz  = np.zeros((n, 3), dtype=np.float32)
-    for i in range(n):
-        base = i * step
-        xyz[i, 0] = struct.unpack_from("f", data, base + offsets["x"])[0]
-        xyz[i, 1] = struct.unpack_from("f", data, base + offsets["y"])[0]
-        xyz[i, 2] = struct.unpack_from("f", data, base + offsets["z"])[0]
+    buf  = np.frombuffer(bytes(msg.data), dtype=np.uint8).reshape(n, step)
+
+    xyz = np.zeros((n, 3), dtype=np.float32)
+    for k, name in enumerate(("x", "y", "z")):
+        off = offsets[name]
+        xyz[:, k] = buf[:, off:off+4].view(np.float32).reshape(n)
+
     valid = np.isfinite(xyz).all(axis=1)
     return xyz[valid]
 
@@ -118,15 +114,25 @@ def _voxel_downsample(xyz, voxel_size=0.05):
 def accumulated_cloud_to_occupancy_grid(xyz, resolution=0.05,
                                          z_min=0.1, z_max=2.5,
                                          frame_id="world"):
+    """
+    Convert accumulated 3D point cloud to 2D occupancy grid.
+
+    Only points in [z_min, z_max] are treated as occupied.
+    Floor points (z in [-0.5, z_min)) are used as a free-space proxy
+    — note: these are hit points, not raycasted free space; treated as
+    a thesis limitation (acknowledged in write-up).
+    """
     if len(xyz) == 0:
         return None
     mask  = (xyz[:, 2] >= z_min) & (xyz[:, 2] <= z_max)
     pts2d = xyz[mask, :2]
     if len(pts2d) == 0:
         return None
+
     floor_mask = (xyz[:, 2] >= -0.5) & (xyz[:, 2] < z_min)
     floor_pts  = xyz[floor_mask, :2]
     all_pts = np.vstack([pts2d, floor_pts]) if len(floor_pts) > 0 else pts2d
+
     min_x = all_pts[:, 0].min() - 1.0
     min_y = all_pts[:, 1].min() - 1.0
     max_x = all_pts[:, 0].max() + 1.0
@@ -134,15 +140,18 @@ def accumulated_cloud_to_occupancy_grid(xyz, resolution=0.05,
     width  = int(np.ceil((max_x - min_x) / resolution))
     height = int(np.ceil((max_y - min_y) / resolution))
     grid   = np.full((height, width), -1, dtype=np.int8)
+
     if len(floor_pts) > 0:
         gx = ((floor_pts[:, 0] - min_x) / resolution).astype(int)
         gy = ((floor_pts[:, 1] - min_y) / resolution).astype(int)
         v  = (gx >= 0) & (gx < width) & (gy >= 0) & (gy < height)
         grid[gy[v], gx[v]] = 0
+
     gx = ((pts2d[:, 0] - min_x) / resolution).astype(int)
     gy = ((pts2d[:, 1] - min_y) / resolution).astype(int)
     v  = (gx >= 0) & (gx < width) & (gy >= 0) & (gy < height)
     grid[gy[v], gx[v]] = 100
+
     msg = OccupancyGrid()
     msg.info.resolution            = resolution
     msg.info.width                 = width
@@ -156,18 +165,16 @@ def accumulated_cloud_to_occupancy_grid(xyz, resolution=0.05,
 
 
 def _wall_sharpness(grid_np):
+    """
+    Mean run-length of occupied cells (lower = sharper/thinner walls).
+    Uses fast numpy implementation consistent with central_server_gnn._sharpness.
+    """
     occupied = (grid_np == 100)
-    run_lengths = []
-    for row in occupied:
-        in_run, length = False, 0
-        for val in row:
-            if val:
-                in_run = True; length += 1
-            elif in_run:
-                run_lengths.append(length); in_run = False; length = 0
-        if in_run:
-            run_lengths.append(length)
-    return float(np.mean(run_lengths)) if run_lengths else 0.0
+    padded = np.pad(occupied, ((0, 0), (1, 1)), constant_values=False)
+    starts = ~padded[:, :-1] & padded[:, 1:]
+    ends   =  padded[:, :-1] & ~padded[:, 1:]
+    run_lengths = np.where(ends)[1] - np.where(starts)[1]
+    return float(run_lengths.mean()) if len(run_lengths) > 0 else 0.0
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -254,7 +261,7 @@ def log_odds_merge(maps, resolution):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  VGICP drift correction  —  FIXED architecture
+#  VGICP drift correction
 # ─────────────────────────────────────────────────────────────────────────────
 
 def apply_transform(xyz, T):
@@ -271,7 +278,7 @@ def run_vgicp(source_cloud, target_cloud,
     """
     Register source into target frame using small_gicp VGICP.
     Returns (T_4x4, fitness, rmse, converged).
-    T transforms source → target (i.e. apply to source points).
+    T transforms source → target.
     """
     try:
         import small_gicp
@@ -317,49 +324,54 @@ def run_vgicp(source_cloud, target_cloud,
 
 class DriftCorrector:
     """
-    Per-robot VGICP drift correction.
+    Per-robot VGICP drift correction (translation-only).
 
-    For each robot i, build a consensus reference cloud from all
-    OTHER robots' accumulated clouds, then run VGICP to find how
-    much robot i has drifted from the consensus.
+    For each robot i, builds a consensus reference cloud from all OTHER
+    robots, runs VGICP to estimate the full 6-DOF correction, checks
+    acceptance on the FULL transform (including rotation), then strips
+    rotation and applies only the translational component.
 
-    The resulting correction transforms robot i's cloud so it better
-    agrees with the rest of the fleet.
+    Rationale for translation-only: GLIM drift in flat featureless
+    simulation is primarily XY translation. Rotation estimates from
+    ICP on 2.5D clouds are unreliable and would corrupt the correction.
+    Rotational drift is acknowledged as a thesis limitation.
 
-    Acceptance criteria are intentionally relaxed compared to v1
-    because GLIM can drift significantly (metres / tens of degrees)
-    in a featureless Gazebo simulation with flat floors.
+    Acceptance thresholds (intentionally relaxed for flat sim):
+      fitness > 0.05  — low overlap is expected in multi-robot scenario
+      rmse    < 5.0m  — drift can be metres in flat sim
+      rot     < 20°   — checked on full ICP result before stripping
+      trans   < 3.0m  — translational offset
     """
 
-    # Thresholds for accepting a correction
-    MIN_FITNESS   = 0.05   # inlier ratio  (relaxed from 0.30)
-    MAX_RMSE_M    = 5.0    # metres        (relaxed from 8.0)
-    MAX_ROT_DEG   = 20.0   # degrees       (relaxed from 5.0)
-    MAX_TRANS_M   = 3.0    # metres        (relaxed from 0.5)
-    MIN_REF_PTS   = 500    # min points in reference cloud
-    MIN_SRC_PTS   = 500    # min points in source cloud
+    MIN_FITNESS = 0.05
+    MAX_RMSE_M  = 5.0
+    MAX_ROT_DEG = 20.0
+    MAX_TRANS_M = 3.0
+    MIN_REF_PTS = 500
+    MIN_SRC_PTS = 500
 
     def __init__(self, robot_names, voxel_size=0.15, max_corr=1.0,
                  metrics_dir="/tmp"):
         self.names       = robot_names
         self.voxel_size  = voxel_size
         self.max_corr    = max_corr
-        self.transforms  = {name: np.eye(4) for name in robot_names}
         self.log         = []
         self.metrics_dir = metrics_dir
 
-    def run(self, clouds: dict):
+    def run(self, clouds: dict) -> dict:
         """
         Run per-robot drift correction.
         clouds: {robot_name → np.ndarray (N,3) in world frame}
-        Updates self.transforms[name].
+        Returns: {robot_name → T_4x4 translation-only correction transform}
+                 Only contains entries for robots with accepted corrections.
         """
+        corrections = {}
+
         for name in self.names:
             src_cloud = clouds.get(name)
             if src_cloud is None or len(src_cloud) < self.MIN_SRC_PTS:
                 continue
 
-            # Build reference = union of all OTHER robots' clouds
             ref_parts = [clouds[n] for n in self.names
                          if n != name and len(clouds.get(n, [])) > 0]
             if not ref_parts:
@@ -375,48 +387,45 @@ class DriftCorrector:
                 max_correspondence_distance=self.max_corr)
             elapsed = time.time() - t0
 
-            cos_val   = min(1.0, max(-1.0, (np.trace(T[:3, :3]) - 1) / 2))
-            rot_deg   = math.degrees(math.acos(cos_val))
-            trans_m   = float(np.linalg.norm(T[:3, 3]))
+            # FIX3: compute real rot_deg from full ICP result BEFORE stripping
+            cos_val     = min(1.0, max(-1.0, (np.trace(T[:3, :3]) - 1) / 2))
+            real_rot_deg = math.degrees(math.acos(cos_val))
+            trans_m     = float(np.linalg.norm(T[:3, 3]))
 
-            # Strip rotation — only apply translational correction
-            T[:3, :3] = np.eye(3)
-            # Recompute rot_deg after stripping (will be 0)
-            rot_deg = 0.0
+            # Gate acceptance on the FULL transform
             accepted = (
-                fitness  > self.MIN_FITNESS  and
-                rmse     < self.MAX_RMSE_M   and
-                rot_deg  < self.MAX_ROT_DEG  and
-                trans_m  < self.MAX_TRANS_M
+                fitness      > self.MIN_FITNESS  and
+                rmse         < self.MAX_RMSE_M   and
+                real_rot_deg < self.MAX_ROT_DEG  and
+                trans_m      < self.MAX_TRANS_M
             )
 
+            # Strip rotation — apply translation-only correction
+            T_trans_only = np.eye(4)
+            T_trans_only[:3, 3] = T[:3, 3]
+
             record = {
-                "timestamp": datetime.now().isoformat(),
-                "robot":     name,
-                "fitness":   round(fitness,  4),
-                "rmse_m":    round(rmse,     4) if rmse != float("inf") else None,
-                "rot_deg":   round(rot_deg,  2),
-                "trans_m":   round(trans_m,  4),
-                "converged": converged,
-                "elapsed_s": round(elapsed,  3),
-                "accepted":  accepted,
-                "T":         T.tolist(),
+                "timestamp":  datetime.now().isoformat(),
+                "robot":      name,
+                "fitness":    round(fitness,       4),
+                "rmse_m":     round(rmse,          4) if rmse != float("inf") else None,
+                "rot_deg":    round(real_rot_deg,  2),   # REAL value, not 0
+                "trans_m":    round(trans_m,       4),
+                "converged":  converged,
+                "elapsed_s":  round(elapsed,       3),
+                "accepted":   accepted,
+                "T":          T_trans_only.tolist(),
             }
             self.log.append(record)
 
-            # Persist incrementally
             with open(os.path.join(self.metrics_dir, "icp_drift_corrections.jsonl"),
                       "a") as f:
                 f.write(json.dumps(record) + "\n")
 
             if accepted:
-                # Compose with existing correction (incremental update)
-                self.transforms[name] = T
+                corrections[name] = T_trans_only
 
-        return self.transforms
-
-    def apply(self, name: str, cloud: np.ndarray) -> np.ndarray:
-        return cloud  # TF-based correction; cloud untouched
+        return corrections
 
     @property
     def n_accepted(self):
@@ -429,16 +438,21 @@ class DriftCorrector:
 
 def gnn_merge(maps: dict, resolution: float,
               gnn_model=None, point_counts: dict = None):
-    """Delegate to real GNN model; fall back to log_odds if unavailable."""
+    """
+    Delegate to GNN fusion. Uses trained PyTorch model if available at
+    /ros2_ws/results/gnn/gnn_fusion.pt, else falls back to numpy GAT.
+    Falls back to log_odds if both fail.
+    """
     if gnn_model is not None:
         try:
             import sys as _sys, os as _os
             _pkg_dir = _os.path.dirname(_os.path.abspath(__file__))
             if _pkg_dir not in _sys.path:
                 _sys.path.insert(0, _pkg_dir)
-            from central_server_gnn import fuse_with_gnn
-            result = fuse_with_gnn(gnn_model, maps, resolution,
-                                   point_counts=point_counts)
+            from central_server_gnn import fuse_with_gnn_trained
+            result = fuse_with_gnn_trained(maps, resolution,
+                                           point_counts=point_counts,
+                                           fallback_model=gnn_model)
             if result is not None:
                 return result
         except Exception as e:
@@ -464,12 +478,12 @@ class CentralServer(Node):
         self.declare_parameter("max_points_per_robot",   500_000)
         self.declare_parameter("metrics_interval_sec",   30.0)
         self.declare_parameter("method_label",           "baseline_tf")
-        # ICP
+        # ICP — FIX2: 0.2 Hz = every 5s (was 0.016 = every 62s)
         self.declare_parameter("icp_voxel_size",         0.15)
         self.declare_parameter("icp_max_correspondence", 1.0)
-        self.declare_parameter("icp_frequency",          0.016)   # Hz: every 5 s
+        self.declare_parameter("icp_frequency",          0.2)
         # GNN online updates
-        self.declare_parameter("gnn_update_interval",    60.0)  # seconds
+        self.declare_parameter("gnn_update_interval",    60.0)
 
         ns  = self.robot_namespaces  = self.get_parameter("robot_namespaces").value
         self.merge_frequency         = self.get_parameter("map_merge_frequency").value
@@ -511,12 +525,13 @@ class CentralServer(Node):
         self.tf_buffer      = Buffer()
         self.tf_listener    = TransformListener(self.tf_buffer, self)
         self.tf_broadcaster = TransformBroadcaster(self)
-        self.icp_corrections = {n: None for n in ns}
 
         # ── State ─────────────────────────────────────────────────────────────
         self.robot_clouds      = {n: np.zeros((0, 3), dtype=np.float32) for n in ns}
         self.robot_maps        = {}
         self.global_map_latest = None
+        # FIX4: icp_corrections is read and written under self.lock
+        self.icp_corrections   = {n: None for n in ns}
         self.lock              = threading.Lock()
 
         # ── ICP drift corrector ───────────────────────────────────────────────
@@ -577,7 +592,7 @@ class CentralServer(Node):
                 _sys.path.insert(0, _pkg_dir)
             from central_server_gnn import load_gnn_model
             self.gnn_model = load_gnn_model(n_robots=len(self.robot_namespaces))
-            self.get_logger().info("[GNN] model loaded (2-layer GAT, pure NumPy)")
+            self.get_logger().info("[GNN] model loaded (trained .pt if available, else numpy GAT)")
         except Exception as e:
             self.get_logger().warn(f"[GNN] load failed: {e} — using log_odds fallback")
             self.merge_method = "log_odds"
@@ -602,17 +617,17 @@ class CentralServer(Node):
         if len(xyz) == 0:
             return
 
+        # FIX4: read icp_corrections inside the same lock as cloud update
         with self.lock:
             current  = self.robot_clouds[robot_ns]
             combined = np.vstack([current, xyz]) if len(current) > 0 else xyz
             if len(combined) > self.max_points:
                 combined = _voxel_downsample(combined, voxel_size=0.05)
             self.robot_clouds[robot_ns] = combined
+            T_corr = self.icp_corrections.get(robot_ns)  # safe read under lock
 
-        # Apply ICP drift correction via transform (not cloud shifting)
-        if self.drift_corrector is not None:
-            T_corr = self.icp_corrections.get(robot_ns)
-            xyz_corrected = apply_transform(combined, T_corr) if T_corr is not None and not np.allclose(T_corr, np.eye(4)) else combined
+        if T_corr is not None and not np.allclose(T_corr, np.eye(4)):
+            xyz_corrected = apply_transform(combined, T_corr)
         else:
             xyz_corrected = combined
 
@@ -633,41 +648,35 @@ class CentralServer(Node):
         with self.lock:
             clouds = {n: self.robot_clouds[n].copy() for n in self.robot_namespaces}
 
-        transforms = self.drift_corrector.run(clouds)
-        accepted   = self.drift_corrector.n_accepted
-        total      = len(self.drift_corrector.log)
+        # DriftCorrector.run() returns only accepted corrections
+        accepted_corrections = self.drift_corrector.run(clouds)
+        n_accepted = self.drift_corrector.n_accepted
+        n_total    = len(self.drift_corrector.log)
 
-        if total > 0:
+        if n_total > 0:
             self.get_logger().info(
-                f"[ICP] drift correction: {accepted}/{total} accepted")
+                f"[ICP] drift correction: {n_accepted}/{n_total} accepted")
 
-        # Publish per-robot TF corrections
+        # Write accepted corrections under lock, publish TF for visualisation
         now = self.get_clock().now().to_msg()
-        for rec in self.drift_corrector.log[-len(self.robot_namespaces):]:
-            if not rec["accepted"]:
-                continue
-            name = rec["robot"]
-            T = np.array(rec["T"])
+        for name, T in accepted_corrections.items():
             with self.lock:
-                self.icp_corrections[name] = T
-            # Publish as TF for visualisation
-            import math as _math
+                self.icp_corrections[name] = T  # FIX4: write under lock
+
+            # Publish as TF frame for RViz visualisation only
+            # (not consumed by any other part of the system)
             ts = TransformStamped()
             ts.header.stamp    = now
             ts.header.frame_id = "world"
             ts.child_frame_id  = f"icp_correction/{name}"
-            ts.transform.translation.x = float(T[0,3])
-            ts.transform.translation.y = float(T[1,3])
-            ts.transform.translation.z = float(T[2,3])
-            R = T[:3,:3]; tr = R[0,0]+R[1,1]+R[2,2]
-            if tr > 0:
-                s=0.5/_math.sqrt(tr+1.0); qw=0.25/s
-                qx=(R[2,1]-R[1,2])*s; qy=(R[0,2]-R[2,0])*s; qz=(R[1,0]-R[0,1])*s
-            else:
-                qw,qx,qy,qz=1.0,0.0,0.0,0.0
-            n=_math.sqrt(qw**2+qx**2+qy**2+qz**2)
-            ts.transform.rotation.w=qw/n; ts.transform.rotation.x=qx/n
-            ts.transform.rotation.y=qy/n; ts.transform.rotation.z=qz/n
+            ts.transform.translation.x = float(T[0, 3])
+            ts.transform.translation.y = float(T[1, 3])
+            ts.transform.translation.z = float(T[2, 3])
+            # Rotation is identity (translation-only correction)
+            ts.transform.rotation.w = 1.0
+            ts.transform.rotation.x = 0.0
+            ts.transform.rotation.y = 0.0
+            ts.transform.rotation.z = 0.0
             self.tf_broadcaster.sendTransform(ts)
 
     # ── GNN online update ─────────────────────────────────────────────────────

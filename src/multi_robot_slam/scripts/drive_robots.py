@@ -1,4 +1,19 @@
 #!/usr/bin/env python3
+"""
+drive_robots.py  —  Waypoint-following driver for 3 robots
+===========================================================
+Drives robot1, robot2, robot3 through pre-defined routes using
+world-frame TF pose feedback.
+
+Changes from v1:
+  FIX1: time.time() replaced with ROS sim clock throughout.
+        Gazebo + 3x GLIM runs at 0.5-0.8x real-time under load.
+        Wall-clock timeouts would cause robots to skip reachable
+        waypoints prematurely and spin phases to be cut short.
+        self.clock = self.get_clock() stored in __init__; all
+        time comparisons use self._now() -> float seconds.
+"""
+
 import rclpy
 import rclpy.parameter
 from rclpy.node import Node
@@ -51,14 +66,27 @@ ROUTES = {
 LINEAR_SPEED   = 0.4
 ANGULAR_SPEED  = 0.7
 GOAL_TOLERANCE = 0.4
-STUCK_TIMEOUT  = 30.0
+STUCK_TIMEOUT  = 30.0   # sim seconds (FIX1: was wall seconds)
+MISSION_TIMEOUT = 180.0   # 3 minutes (sim time)
 
 
 class MultiRobotDriver(Node):
     def __init__(self):
-        super().__init__("multi_robot_driver", parameter_overrides=[rclpy.parameter.Parameter("use_sim_time", rclpy.Parameter.Type.BOOL, True)])
+        super().__init__(
+            "multi_robot_driver",
+            parameter_overrides=[
+                rclpy.parameter.Parameter(
+                    "use_sim_time",
+                    rclpy.Parameter.Type.BOOL,
+                    True)
+            ])
+
+        # FIX1: store ROS clock for sim-time-aware timing
+        self.clock = self.get_clock()
+
         self.tf_buffer   = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
+        self.mission_start = self._now()
         self.robots = {}
         for name in ROUTES:
             self.robots[name] = {
@@ -73,10 +101,16 @@ class MultiRobotDriver(Node):
             self.get_logger().info(f"[{name}] registered")
         self.create_timer(0.1, self.tick)
 
+
+
+    def _now(self) -> float:
+        """Current time in seconds using ROS sim clock (respects use_sim_time)."""
+        return self.clock.now().nanoseconds / 1e9
+
     def get_world_pose(self, robot_name):
         try:
             t = self.tf_buffer.lookup_transform(
-                'world', f'{robot_name}/base_footprint',
+                "world", f"{robot_name}/base_footprint",
                 rclpy.time.Time(),
                 timeout=rclpy.duration.Duration(seconds=0.1))
             x   = t.transform.translation.x
@@ -93,6 +127,16 @@ class MultiRobotDriver(Node):
         self.robots[name]["cmd_pub"].publish(Twist())
 
     def tick(self):
+
+        if self._now() - self.mission_start >= MISSION_TIMEOUT:#
+            self.get_logger().info(#
+                f"Mission timeout ({MISSION_TIMEOUT}s) reached")#
+
+            for name in self.robots:#
+                self.stop(name)#
+
+            raise SystemExit
+
         all_done = True
         for name, r in self.robots.items():
             if r["done"]:
@@ -105,17 +149,18 @@ class MultiRobotDriver(Node):
                     self.get_logger().info(
                         f"[{name}] TF ready at world({x:.2f},{y:.2f}) — spinning")
                     r["phase"]    = "spinning"
-                    r["spin_end"] = time.time() + 5.0
+                    r["spin_end"] = self._now() + 5.0  # FIX1
                 else:
                     self.get_logger().info(
-                        f"[{name}] waiting for TF...", throttle_duration_sec=3.0)
+                        f"[{name}] waiting for TF...",
+                        throttle_duration_sec=3.0)
                 continue
 
             if x is None:
                 continue
 
             if r["phase"] == "spinning":
-                if time.time() < r["spin_end"]:
+                if self._now() < r["spin_end"]:  # FIX1
                     msg = Twist()
                     msg.angular.z = ANGULAR_SPEED
                     r["cmd_pub"].publish(msg)
@@ -126,7 +171,7 @@ class MultiRobotDriver(Node):
                         self.get_logger().info(f"[{name}] route complete")
                     else:
                         r["phase"]    = "driving"
-                        r["wp_start"] = time.time()
+                        r["wp_start"] = self._now()  # FIX1
                         wx, wy, lbl, _ = r["waypoints"][r["wp_index"]]
                         self.get_logger().info(
                             f"[{name}] -> '{lbl}' world({wx:.1f},{wy:.1f})")
@@ -136,28 +181,29 @@ class MultiRobotDriver(Node):
                 wx, wy, lbl, spin_t = r["waypoints"][r["wp_index"]]
                 dx   = wx - x
                 dy   = wy - y
-                dist = math.sqrt(dx*dx + dy*dy)
+                dist = math.sqrt(dx * dx + dy * dy)
 
                 if dist < GOAL_TOLERANCE:
                     self.stop(name)
                     self.get_logger().info(f"[{name}] reached '{lbl}'")
                     r["wp_index"] += 1
                     r["phase"]    = "spinning"
-                    r["spin_end"] = time.time() + spin_t
+                    r["spin_end"] = self._now() + spin_t  # FIX1
                     continue
 
-                if time.time() - r["wp_start"] > STUCK_TIMEOUT:
+                if self._now() - r["wp_start"] > STUCK_TIMEOUT:  # FIX1
                     self.stop(name)
-                    self.get_logger().warn(f"[{name}] timeout '{lbl}' — skipping")
+                    self.get_logger().warn(
+                        f"[{name}] timeout '{lbl}' — skipping")
                     r["wp_index"] += 1
                     r["phase"]    = "spinning"
-                    r["spin_end"] = time.time() + 1.0
+                    r["spin_end"] = self._now() + 1.0  # FIX1
                     continue
 
                 goal_yaw = math.atan2(dy, dx)
                 yaw_err  = goal_yaw - yaw
-                while yaw_err >  math.pi: yaw_err -= 2*math.pi
-                while yaw_err < -math.pi: yaw_err += 2*math.pi
+                while yaw_err >  math.pi: yaw_err -= 2 * math.pi
+                while yaw_err < -math.pi: yaw_err += 2 * math.pi
 
                 cmd = Twist()
                 if abs(yaw_err) > 0.35:
@@ -178,7 +224,7 @@ def main():
     print("MULTI-ROBOT DRIVE — world frame TF positioning")
     print("Starting in 3 seconds...")
     print("=" * 60)
-    time.sleep(3)
+    time.sleep(3)   # wall-clock delay before rclpy.init() is fine
     rclpy.init()
     node = MultiRobotDriver()
     try:

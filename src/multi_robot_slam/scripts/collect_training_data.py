@@ -1,3 +1,4 @@
+#collect_training_data.py
 #!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
@@ -10,7 +11,7 @@ from datetime import datetime
 
 SAMPLE_DIR    = "/ros2_ws/results/gnn/samples"
 ROBOTS        = ["robot1", "robot2", "robot3"]
-SAVE_COOLDOWN = 60.0   # minimum seconds between saves — prevents duplicates
+SAVE_COOLDOWN = 30.0   # minimum seconds between saves — prevents duplicates
 
 def next_sample_id(base_dir):
     existing = sorted(glob.glob(os.path.join(base_dir, "sample_*")))
@@ -54,6 +55,7 @@ class TrainingDataCollector(Node):
         self.create_subscription(String, "/save_sample",
             self._save_trigger_cb, 10)
         self.create_timer(30.0, self._status_log)
+        self.create_timer(60.0, self._auto_save)
         self.get_logger().info(
             f"Collector ready. SAVE_COOLDOWN={SAVE_COOLDOWN}s")
 
@@ -87,6 +89,9 @@ class TrainingDataCollector(Node):
         self.get_logger().info(
             f"Maps: {ready}  occ={occ}  saved={self.saved_count}",
             throttle_duration_sec=30.0)
+
+    def _auto_save(self):
+        self.save_sample(label="auto")
 
     def save_sample(self, label="manual"):
         if not all(self.latest_maps[r] is not None for r in ROBOTS):
