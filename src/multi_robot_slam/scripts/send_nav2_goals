@@ -1,0 +1,200 @@
+#!/usr/bin/env python3
+"""
+send_nav2_goals.py
+
+Step 2 of Stage 4 Gazebo deployment: hardcoded Nav2 goals.
+Sends one goal per robot via nav2_simple_commander.BasicNavigator,
+one BasicNavigator instance per robot namespace (robot1/robot2/robot3),
+and logs per-robot timing + path-length data to CSV.
+
+Purpose: characterize real Nav2 execution timing/path behavior against
+the training env's idealized "2m per decision step" assumption, and
+confirm goal persistence / completion behavior before plugging in the
+RL policy (Step 3).
+
+Usage:
+    python3 send_nav2_goals.py
+    python3 send_nav2_goals.py --goals robot1:1.0:0.5 robot2:-2.0:3.0 robot3:0.0:-1.5
+
+Run from /ros2_ws/src/multi_robot_slam/scripts/ with the full stack
+(Gazebo, IMU relays, GLIM, central_server, Nav2) already up.
+"""
+
+import argparse
+import csv
+import math
+import threading
+import time
+
+import rclpy
+from rclpy.duration import Duration
+from geometry_msgs.msg import PoseStamped
+from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
+
+
+DEFAULT_GOALS = {
+    # robot_name: (x, y, yaw_rad) in that robot's own map frame
+    "robot1": (2.0, 2.0, 0.0),
+    "robot2": (-2.0, 2.0, 0.0),
+    "robot3": (2.0, -2.0, 0.0),
+}
+
+
+def make_pose(navigator: BasicNavigator, x: float, y: float, yaw: float, frame_id: str) -> PoseStamped:
+    pose = PoseStamped()
+    pose.header.frame_id = frame_id
+    pose.header.stamp = navigator.get_clock().now().to_msg()
+    pose.pose.position.x = x
+    pose.pose.position.y = y
+    pose.pose.orientation.z = math.sin(yaw / 2.0)
+    pose.pose.orientation.w = math.cos(yaw / 2.0)
+    return pose
+
+
+def run_robot_goal(robot_name: str, x: float, y: float, yaw: float, results: list, results_lock: threading.Lock):
+    """Runs in its own thread so all three robots navigate concurrently,
+    matching how Gazebo will actually run them (not sequentially)."""
+
+    navigator = BasicNavigator(node_name=f"{robot_name}_goal_sender", namespace=f"/{robot_name}")
+    frame_id = f"{robot_name}/map"
+
+    record = {
+        "robot": robot_name,
+        "goal_x": x,
+        "goal_y": y,
+        "send_time": None,
+        "active_time": None,
+        "finish_time": None,
+        "time_to_active_s": None,
+        "time_to_complete_s": None,
+        "result": None,
+        "final_feedback_distance_remaining": None,
+        "final_feedback_eta_s": None,
+    }
+
+    try:
+        # Wait for Nav2 to be active for this robot's namespace before sending.
+        navigator.waitUntilNav2Active()
+
+        goal_pose = make_pose(navigator, x, y, yaw, frame_id)
+
+        t_send = time.monotonic()
+        record["send_time"] = t_send
+        navigator.goToPose(goal_pose)
+
+        # isTaskComplete() also confirms the goal was accepted (active).
+        first_check = True
+        while not navigator.isTaskComplete():
+            if first_check:
+                record["active_time"] = time.monotonic()
+                record["time_to_active_s"] = record["active_time"] - t_send
+                first_check = False
+
+            feedback = navigator.getFeedback()
+            if feedback:
+                record["final_feedback_distance_remaining"] = getattr(
+                    feedback, "distance_remaining", None
+                )
+                eta = getattr(feedback, "estimated_time_remaining", None)
+                if eta is not None:
+                    record["final_feedback_eta_s"] = (
+                        eta.sec + eta.nanosec * 1e-9
+                    )
+            time.sleep(0.2)
+
+        t_finish = time.monotonic()
+        record["finish_time"] = t_finish
+        record["time_to_complete_s"] = t_finish - t_send
+
+        result = navigator.getResult()
+        if result == TaskResult.SUCCEEDED:
+            record["result"] = "SUCCEEDED"
+        elif result == TaskResult.CANCELED:
+            record["result"] = "CANCELED"
+        elif result == TaskResult.FAILED:
+            record["result"] = "FAILED"
+        else:
+            record["result"] = f"UNKNOWN({result})"
+
+        print(f"[{robot_name}] goal=({x:.2f},{y:.2f}) result={record['result']} "
+              f"time_to_active={record['time_to_active_s']:.2f}s "
+              f"time_to_complete={record['time_to_complete_s']:.2f}s")
+
+    except Exception as e:
+        record["result"] = f"EXCEPTION: {e}"
+        print(f"[{robot_name}] EXCEPTION: {e}")
+
+    finally:
+        with results_lock:
+            results.append(record)
+        navigator.lifecycleShutdown()
+        navigator.destroy_node()
+
+
+def parse_goal_arg(s: str):
+    parts = s.split(":")
+    if len(parts) != 3:
+        raise argparse.ArgumentTypeError(
+            f"goal '{s}' must be robot_name:x:y, e.g. robot1:1.0:0.5"
+        )
+    name, x, y = parts
+    return name, float(x), float(y)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Send hardcoded Nav2 goals per robot (Step 2).")
+    parser.add_argument(
+        "--goals", nargs="*", type=parse_goal_arg,
+        help="Override goals as robot_name:x:y (repeatable). Defaults to DEFAULT_GOALS."
+    )
+    parser.add_argument(
+        "--out", default="nav2_step2_results.csv",
+        help="Output CSV path (default: nav2_step2_results.csv in cwd)."
+    )
+    args = parser.parse_args()
+
+    rclpy.init()
+
+    if args.goals:
+        goal_map = {name: (x, y, 0.0) for name, x, y in args.goals}
+    else:
+        goal_map = DEFAULT_GOALS
+
+    print(f"Sending goals: {goal_map}")
+    print("Each robot navigates concurrently via its own BasicNavigator instance.")
+
+    results = []
+    results_lock = threading.Lock()
+    threads = []
+
+    for robot_name, (x, y, yaw) in goal_map.items():
+        t = threading.Thread(
+            target=run_robot_goal,
+            args=(robot_name, x, y, yaw, results, results_lock),
+            daemon=True,
+        )
+        threads.append(t)
+        t.start()
+
+    for t in threads:
+        t.join()
+
+    rclpy.shutdown()
+
+    if results:
+        fieldnames = list(results[0].keys())
+        with open(args.out, "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(results)
+        print(f"\nResults written to {args.out}")
+
+    print("\n--- Summary ---")
+    for r in results:
+        print(f"{r['robot']}: {r['result']} "
+              f"(active in {r['time_to_active_s']}s, "
+              f"completed in {r['time_to_complete_s']}s)")
+
+
+if __name__ == "__main__":
+    main()

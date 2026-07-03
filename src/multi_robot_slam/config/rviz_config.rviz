@@ -39,6 +39,21 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /global_map
       Value: true
+
+    # Training Grid (re-gridded canvas, debug)
+    - Alpha: 0.7
+      Class: rviz_default_plugins/Map
+      Color Scheme: map
+      Enabled: true
+      Name: Training Grid
+      Topic:
+        Depth: 5
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /training_grid_rviz
+      Value: true
+
     
     # Robot1 Map
     - Alpha: 0.7

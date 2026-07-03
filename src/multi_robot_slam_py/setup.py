@@ -24,6 +24,9 @@ setup(
         'console_scripts': [
             'central_server = multi_robot_slam_py.central_server:main',
             'central_server_unified = multi_robot_slam_py.central_server_unified:main',
+            'coordination_node = multi_robot_slam_py.coordination_node:main',
+            'grid_projector_node = multi_robot_slam_py.grid_projector_node:main',
+            'world_tf_broadcaster = multi_robot_slam_py.world_tf_broadcaster:main',
             'smooth_circle = scripts.smooth_circle:main',
         ],
     },

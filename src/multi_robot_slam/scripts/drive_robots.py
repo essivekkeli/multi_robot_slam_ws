@@ -30,10 +30,6 @@ ROUTES = {
         (-1.0, -5.0, "east_of_niche",   2.0),
         ( 0.0, -4.5, "gap_approach",    2.0),
         ( 0.0, -2.0, "in_corridor",     3.0),
-        (-1.0,  0.5, "junction_west",   5.0),
-        ( 1.0,  0.5, "junction_east",   5.0),
-        ( 0.0, -1.0, "junction_south",  5.0),
-        ( 0.0, -4.5, "gap_return",      1.0),
         (-5.0, -5.0, "home",            2.0),
     ],
     "robot2": [
@@ -43,10 +39,6 @@ ROUTES = {
         ( 1.0, -5.0, "west_approach",   2.0),
         ( 0.0, -4.5, "gap_approach",    2.0),
         ( 0.0, -2.0, "in_corridor",     3.0),
-        ( 1.0,  0.5, "junction_east",   5.0),
-        (-1.0,  0.5, "junction_west",   5.0),
-        ( 0.0, -1.0, "junction_south",  5.0),
-        ( 0.0, -4.5, "gap_return",      1.0),
         ( 5.0, -5.0, "home",            2.0),
     ],
     "robot3": [
@@ -55,10 +47,6 @@ ROUTES = {
         ( 0.0,  5.5, "nc_centre",       3.0),
         ( 0.0,  4.0, "gap_approach",    2.0),
         ( 0.0,  2.0, "in_corridor",     3.0),
-        ( 0.0,  1.0, "junction_north",  5.0),
-        ( 1.0, -0.5, "junction_east",   5.0),
-        (-1.0, -0.5, "junction_west",   5.0),
-        ( 0.0,  4.0, "gap_return",      1.0),
         ( 0.0,  5.0, "home",            2.0),
     ],
 }
@@ -86,7 +74,7 @@ class MultiRobotDriver(Node):
 
         self.tf_buffer   = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
-        self.mission_start = self._now()
+        self.mission_start = None  # set on first tick, not in __init__
         self.robots = {}
         for name in ROUTES:
             self.robots[name] = {
@@ -127,6 +115,9 @@ class MultiRobotDriver(Node):
         self.robots[name]["cmd_pub"].publish(Twist())
 
     def tick(self):
+        if self.mission_start is None:
+            self.mission_start = self._now()
+            return
 
         if self._now() - self.mission_start >= MISSION_TIMEOUT:#
             self.get_logger().info(#

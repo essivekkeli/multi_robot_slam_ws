@@ -1,0 +1,343 @@
+#!/usr/bin/env python3
+"""
+coordination_node.py
+====================
+Stage 4 Gazebo deployment — drives three robots via trained MAPPO/IPPO policy.
+
+ActorNet architecture (live train_mappo.py, confirmed):
+  Input:  extra (B, EXTRA_DIM=19)  — self_pos, other_pos, frontiers, n_frac
+  Hidden: Linear(19,128) -> Tanh -> Linear(128,128) -> Tanh
+  Output: Linear(128, ACTION_N=7)
+  NOTE: local_map argument is accepted but IGNORED by the network.
+
+Goal persistence (v12 fix): robots reassigned only on Nav2 SUCCEEDED/ABORTED/CANCELED.
+
+Backoff logic: if a goal aborts within FAST_ABORT_THRESHOLD_SEC sim-seconds of
+being sent, the robot enters a cooldown of COOLDOWN_SEC sim-seconds before
+receiving a new assignment. Prevents spam loops when the global costmap has
+no path to a frontier (e.g. robot3 assigned SW corner before south is mapped).
+ROS sim-time is used throughout (not wall clock), consistent with /clock.
+
+References
+----------
+  Yu et al. (2022) MAPPO: arxiv 2103.01955
+  Schulman et al. (2017) PPO: arxiv 1707.06347
+  Yamauchi (1997) frontier-based exploration: IEEE CIRA
+  Koide et al. (2024) GLIM: IEEE RA-L
+  Macenski et al. (2023) Nav2: J. Field Robotics
+"""
+
+import argparse
+import numpy as np
+import rclpy
+from rclpy.node import Node
+from rclpy.action import ActionClient
+from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
+from std_msgs.msg import Int8MultiArray
+from nav2_msgs.action import NavigateToPose
+from geometry_msgs.msg import PoseStamped, PointStamped
+from action_msgs.msg import GoalStatus
+import tf2_ros
+import tf2_geometry_msgs  # noqa
+import torch
+import torch.nn as nn
+from torch.distributions import Categorical
+from scipy.ndimage import label
+
+# ── Constants (mirror live multi_robot_env.py exactly) ───────────────────────
+WORLD_MIN  = -10.0
+WORLD_MAX  =  10.0
+RESOLUTION =  0.05
+GRID_SIZE  =  400
+FREE = 0; OCCUPIED = 1; UNKNOWN = -1
+MAX_FRONTIERS = 6
+LOCAL_CROP    = 64
+N_ROBOTS      = 3
+EXTRA_DIM     = 2 + (N_ROBOTS-1)*2 + MAX_FRONTIERS*2 + 1  # 19
+ACTION_N      = MAX_FRONTIERS + 1                           # 7
+ROBOT_NAMES   = ["robot1", "robot2", "robot3"]
+
+# ── Backoff parameters ────────────────────────────────────────────────────────
+FAST_ABORT_THRESHOLD_SEC = 5.0
+COOLDOWN_SEC = 10.0
+
+# ── Coordinate helpers ────────────────────────────────────────────────────────
+def w2g(x, y):
+    c = int((x - WORLD_MIN) / RESOLUTION)
+    r = int((y - WORLD_MIN) / RESOLUTION)
+    return max(0, min(GRID_SIZE-1, r)), max(0, min(GRID_SIZE-1, c))
+
+def g2w(r, c):
+    return WORLD_MIN + (c+0.5)*RESOLUTION, WORLD_MIN + (r+0.5)*RESOLUTION
+
+# ── Frontier detection (mirrors live multi_robot_env.py find_frontiers_fast) ─
+def find_frontiers_fast(grid, downsample=4):
+    D=downsample; sz=GRID_SIZE//D
+    m=grid.reshape(sz,D,sz,D)
+    free_c   =(m==FREE).any(axis=(1,3))
+    unknown_c=(m==UNKNOWN).any(axis=(1,3))
+    adj_unk=(np.roll(unknown_c,1,0)|np.roll(unknown_c,-1,0)|
+             np.roll(unknown_c,1,1)|np.roll(unknown_c,-1,1))
+    fmask=free_c&adj_unk
+    if not fmask.any(): return []
+    labeled,n=label(fmask)
+    res_c=RESOLUTION*D
+    centroids=[]
+    for i in range(1,n+1):
+        rr,cc=np.where(labeled==i)
+        if len(rr)<1: continue
+        wx=float(cc.mean()*res_c+WORLD_MIN+res_c/2)
+        wy=float(rr.mean()*res_c+WORLD_MIN+res_c/2)
+        centroids.append((wx,wy))
+    return centroids
+
+# ── ActorNet (matches live train_mappo.py EXACTLY) ───────────────────────────
+class ActorNet(nn.Module):
+    def __init__(self, obs_dim=EXTRA_DIM, hidden=128):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(obs_dim, hidden), nn.Tanh(),
+            nn.Linear(hidden, hidden),  nn.Tanh(),
+            nn.Linear(hidden, ACTION_N),
+        )
+        nn.init.orthogonal_(self.net[-1].weight, gain=0.01)
+
+    def forward(self, local_map, extra):
+        return self.net(extra)
+
+# ── Goal state per robot ──────────────────────────────────────────────────────
+class RobotGoalState:
+    IDLE   = "IDLE"
+    ACTIVE = "ACTIVE"
+
+    def __init__(self, name):
+        self.name  = name
+        self.state = self.IDLE
+        self.goal_world          = None
+        self._handle             = None
+        self._goal_sent_sec      = None
+        self._cooldown_until_sec = None
+        self._node_ref           = None
+
+    def on_result(self, future):
+        status = future.result().status
+        if status in (GoalStatus.STATUS_SUCCEEDED,
+                      GoalStatus.STATUS_ABORTED,
+                      GoalStatus.STATUS_CANCELED):
+
+            if (status == GoalStatus.STATUS_ABORTED
+                    and self._goal_sent_sec is not None
+                    and self._node_ref is not None):
+                now_sec = self._node_ref.get_clock().now().nanoseconds * 1e-9
+                elapsed = now_sec - self._goal_sent_sec
+                if elapsed < FAST_ABORT_THRESHOLD_SEC:
+                    self._cooldown_until_sec = now_sec + COOLDOWN_SEC
+                    self._node_ref.get_logger().warn(
+                        f"{self.name}: fast abort after {elapsed:.1f}s — "
+                        f"cooldown {COOLDOWN_SEC:.0f}s "
+                        f"(goal was {self.goal_world})")
+
+            self.state          = self.IDLE
+            self.goal_world     = None
+            self._handle        = None
+            self._goal_sent_sec = None
+
+    def is_idle(self):
+        return self.state == self.IDLE
+
+    def is_cooling_down(self, now_sec):
+        if self._cooldown_until_sec is None:
+            return False
+        if now_sec < self._cooldown_until_sec:
+            remaining = self._cooldown_until_sec - now_sec
+            if self._node_ref is not None:
+                self._node_ref.get_logger().info(
+                    f"{self.name}: cooling down ({remaining:.0f}s remaining)",
+                    throttle_duration_sec=10.0)
+            return True
+        self._cooldown_until_sec = None
+        return False
+
+# ── Main node ─────────────────────────────────────────────────────────────────
+class CoordinationNode(Node):
+    def __init__(self, policy_path, algo, stochastic):
+        super().__init__("coordination_node")
+        self.algo       = algo
+        self.stochastic = stochastic
+
+        self.device = torch.device("cpu")
+        self.actor  = ActorNet().to(self.device)
+        ckpt = torch.load(policy_path, map_location=self.device,
+                          weights_only=False)
+        self.actor.load_state_dict(ckpt["actor"])
+        self.actor.eval()
+        gs = ckpt.get("global_step", "?")
+        bc = float(ckpt.get("best_cov", 0))
+        self.get_logger().info(
+            f"Loaded {policy_path} | algo={algo} | "
+            f"global_step={gs} | best_cov={bc:.4f} | stochastic={stochastic}")
+
+        self.shared_map = np.full((GRID_SIZE, GRID_SIZE), UNKNOWN, dtype=np.int8)
+        self.frontiers  = []
+        self._map_stamp = None
+
+        self.tf_buffer   = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
+
+        self._nav_clients = {
+            name: ActionClient(self, NavigateToPose, f"/{name}/navigate_to_pose")
+            for name in ROBOT_NAMES
+        }
+        self._goal_states = {name: RobotGoalState(name) for name in ROBOT_NAMES}
+
+        for gs_obj in self._goal_states.values():
+            gs_obj._node_ref = self
+
+        qos = QoSProfile(depth=1,
+                         reliability=ReliabilityPolicy.RELIABLE,
+                         durability=DurabilityPolicy.VOLATILE)
+        self.create_subscription(Int8MultiArray, "/training_grid",
+                                 self._grid_cb, qos)
+        self.create_timer(2.0, self._decision_tick)
+        self.get_logger().info("CoordinationNode ready — waiting for /training_grid")
+
+    def _grid_cb(self, msg: Int8MultiArray):
+        data = np.array(msg.data, dtype=np.int8).reshape(GRID_SIZE, GRID_SIZE)
+        self.shared_map = data
+        self._map_stamp = self.get_clock().now()
+        self.frontiers  = find_frontiers_fast(self.shared_map)
+
+    def _get_world_pose(self, robot_name):
+        try:
+            tf = self.tf_buffer.lookup_transform(
+                "world", f"{robot_name}/base_footprint",
+                rclpy.time.Time(),
+                timeout=rclpy.duration.Duration(seconds=0.1))
+            return tf.transform.translation.x, tf.transform.translation.y
+        except Exception as e:
+            self.get_logger().warn(f"TF {robot_name}: {e}",
+                                   throttle_duration_sec=5.0)
+            return None
+
+    def _build_extra(self, robot_idx, positions):
+        rx, ry = positions[robot_idx]
+        sp = np.array([rx/10., ry/10.], dtype=np.float32)
+        op = np.array([[(positions[j][0]-rx)/20., (positions[j][1]-ry)/20.]
+                       for j in range(N_ROBOTS) if j != robot_idx],
+                      dtype=np.float32)
+        fa = np.zeros((MAX_FRONTIERS, 2), dtype=np.float32)
+        nf = min(len(self.frontiers), MAX_FRONTIERS)
+        for k in range(nf):
+            fa[k] = [(self.frontiers[k][0]-rx)/20.,
+                     (self.frontiers[k][1]-ry)/20.]
+        extra = np.concatenate([sp, op.flatten(), fa.flatten(),
+                                 [nf/MAX_FRONTIERS]]).astype(np.float32)
+        return extra, nf
+
+    @torch.no_grad()
+    def _select_action(self, extra, nf):
+        extra_t = torch.tensor(extra).unsqueeze(0)
+        dummy_map = torch.zeros(1, LOCAL_CROP, LOCAL_CROP)
+        logits = self.actor(dummy_map, extra_t).squeeze(0)
+        if nf < MAX_FRONTIERS:
+            logits[nf:MAX_FRONTIERS] = -1e9
+        if self.stochastic:
+            return Categorical(logits=logits).sample().item()
+        else:
+            return logits.argmax().item()
+
+    def _send_goal(self, robot_name, world_x, world_y):
+        client = self._nav_clients[robot_name]
+        if not client.wait_for_server(timeout_sec=1.0):
+            self.get_logger().error(f"{robot_name}: action server not available")
+            return False
+        pt = PointStamped()
+        pt.header.frame_id = "world"
+        pt.header.stamp    = self.get_clock().now().to_msg()
+        pt.point.x = world_x; pt.point.y = world_y; pt.point.z = 0.0
+        try:
+            pt_map = self.tf_buffer.transform(
+                pt, f"{robot_name}/map",
+                timeout=rclpy.duration.Duration(seconds=0.5))
+        except Exception as e:
+            self.get_logger().warn(f"{robot_name} TF world->map failed: {e}")
+            return False
+        goal = NavigateToPose.Goal()
+        goal.pose = PoseStamped()
+        goal.pose.header.frame_id = f"{robot_name}/map"
+        goal.pose.header.stamp    = self.get_clock().now().to_msg()
+        goal.pose.pose.position.x = pt_map.point.x
+        goal.pose.pose.position.y = pt_map.point.y
+        goal.pose.pose.orientation.w = 1.0
+        f = client.send_goal_async(goal)
+        f.add_done_callback(
+            lambda fut: self._goal_response_cb(fut, robot_name, world_x, world_y))
+        return True
+
+    def _goal_response_cb(self, future, robot_name, wx, wy):
+        handle = future.result()
+        if not handle.accepted:
+            self.get_logger().warn(f"{robot_name}: goal REJECTED")
+            return
+        gs = self._goal_states[robot_name]
+        gs.state = RobotGoalState.ACTIVE
+        gs.goal_world = (wx, wy)
+        gs._handle = handle
+        gs._goal_sent_sec = self.get_clock().now().nanoseconds * 1e-9
+        handle.get_result_async().add_done_callback(gs.on_result)
+        self.get_logger().info(
+            f"-> {robot_name}: goal ({wx:.2f},{wy:.2f}) world")
+
+    def _decision_tick(self):
+        if self._map_stamp is None:
+            self.get_logger().info("Waiting for /training_grid ...",
+                                   throttle_duration_sec=10.0)
+            return
+        if not self.frontiers:
+            self.get_logger().info("No frontiers — exploration complete?",
+                                   throttle_duration_sec=10.0)
+            return
+        positions = []
+        for name in ROBOT_NAMES:
+            pos = self._get_world_pose(name)
+            if pos is None:
+                return
+            positions.append(pos)
+
+        now_sec = self.get_clock().now().nanoseconds * 1e-9
+
+        for i, name in enumerate(ROBOT_NAMES):
+            gs = self._goal_states[name]
+            if not gs.is_idle():
+                continue
+            if gs.is_cooling_down(now_sec):
+                continue
+            extra, nf = self._build_extra(i, positions)
+            if nf == 0:
+                continue
+            action = self._select_action(extra, nf)
+            if action >= MAX_FRONTIERS or action >= nf:
+                self.get_logger().info(f"{name}: STAY")
+                continue
+            gx, gy = self.frontiers[action]
+            self._send_goal(name, gx, gy)
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--policy",    required=True)
+    parser.add_argument("--algo",      default="mappo", choices=["mappo","ippo"])
+    parser.add_argument("--stochastic",    action="store_true",  default=True)
+    parser.add_argument("--deterministic", action="store_false", dest="stochastic")
+    args, ros_args = parser.parse_known_args()
+    rclpy.init(args=ros_args)
+    node = CoordinationNode(args.policy, args.algo, args.stochastic)
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+if __name__ == "__main__":
+    main()

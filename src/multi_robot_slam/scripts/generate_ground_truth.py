@@ -1,3 +1,4 @@
+#generate_ground_truth.py
 #!/usr/bin/env python3
 import argparse, os, xml.etree.ElementTree as ET, math, json
 import numpy as np
